@@ -825,7 +825,8 @@ disc_var_c              =NaN(1,n_c_sel_keys-1);               %for discriminatin
 empty_cell              =repmat({''},1,total_number_of_trials);
 
 states=struct('all_states', empty_cell, 'state_2bo', empty_cell, 'state_1bo', empty_cell, 'state_obs', empty_cell, 'state_1ao', empty_cell, 'state_abo', empty_cell,...
-    'state_sac', empty_cell, 'state_inf', empty_cell,'start_2bo', empty_cell,'start_1bo', empty_cell,'start_obs', empty_cell,'start_mis', empty_cell,'start_sac', empty_cell,'start_1ao', empty_cell,'start_end', empty_cell);
+    'state_sac', empty_cell, 'state_inf', empty_cell,'start_2bo', empty_cell,'start_1bo', empty_cell,'start_obs', empty_cell,'start_mis', empty_cell,'start_sac', empty_cell,'start_1ao', empty_cell,'start_end', empty_cell,...
+    'MP_states', empty_cell,'MP_state_onsets', empty_cell,'TDT_states', empty_cell,'TDT_state_onsets', empty_cell,'run_onset_time',empty_cell,'trial_onset_time', empty_cell);
 
 %% Microstim parameter definitions
 % stim_to_state_end redefinition from trial (instead of task !)
@@ -1192,7 +1193,7 @@ if sum(idx.selection)==0 || isempty(selcomp.trial_set) || (~any(isnan(selcomp.tr
         'session',trials_cell','run',trials_cell','setup',trials_cell','run_start_time',trials_cell','run_end_time',trials_cell');
     states=struct('all_states', trials_cell', 'state_2bo', trials_cell', 'state_1bo', trials_cell', 'state_obs', trials_cell', 'state_1ao', trials_cell', 'state_abo', trials_cell',...
         'state_sac', trials_cell','start_2bo', trials_cell','start_1bo', trials_cell','start_obs', trials_cell','start_mis', trials_cell','start_sac', trials_cell','start_1ao', trials_cell','start_end', trials_cell',...
-    'MP_states', trials_cell','MP_state_onsets', trials_cell','TDT_states', trials_cell','TDT_state_onsets', trials_cell','trial_onset_time', trials_cell');
+    'MP_states', trials_cell','MP_state_onsets', trials_cell','TDT_states', trials_cell','TDT_state_onsets', trials_cell','run_onset_time',trials_cell','trial_onset_time', trials_cell');
 else
     if all(~isnan(selcomp.trial_set))
         trials_cell = num2cell(intersect(all_trials(idx.selection), selcomp.trial_set));  % the vector selected.trials contains only the indexes of selected trials !!!
@@ -1414,6 +1415,7 @@ for n = 1:amount_of_selected_trials
         % Demanded hand (according to task definition) setting
         
         %smpidx.total                 = 1:numel(trial(n).state);
+        states(n).run_onset_time=trial(1).timestamp(6)+60*trial(1).timestamp(5)+3600*trial(1).timestamp(4);
         t_state2=trial(n).tSample_from_time_start(trial(n).state==MA_STATES.FIX_ACQ);
         trial(n).time_axis  = trial(n).tSample_from_time_start - t_state2(1); % tSample_from_time_start = time from beginning of run
         

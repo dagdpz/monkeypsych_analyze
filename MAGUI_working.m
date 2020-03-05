@@ -4,7 +4,7 @@ get_default_key_values
 
 batches=1;
 current_batch=1;
-dag_drive_IP=get_dag_drive_IP;
+dag_drive_IP=DAG_get_server_IP;
 current_main_path='';
 current_monkey='';
 current_sessions={''};
@@ -209,7 +209,7 @@ set(f,'Visible','on');
 
 %% intialize read available keys
     function get_default_key_values
-        full_string_array=read_file_parts('monkeypsych_analyze_working.m','%%%Start_keys','%%%End_keys');
+        full_string_array=DAG_read_file_parts('monkeypsych_analyze_working.m','%%%Start_keys','%%%End_keys');
         all_keys=struct();
         grouped_keys=struct('mode',{{}},'complex_selective',{{}},'simple_selective',{{}},'calcoptions',{{}},'history',{{}},'plotoptions',{{}},'evoked',{{}},'inferential',{{}});
         

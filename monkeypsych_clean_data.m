@@ -65,7 +65,7 @@ for s=1: length(dir_datapath)
             save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
         end
         if ~isfield(trial(1).task,'force_conditions')
-            forced=dtct_forced_condition(trial);
+            forced=MPA_detect_forced_condition(trial);
         end
         for t=1:length(trial)
             if ~isfield(trial(t).task,'force_conditions');                trial(t).task.force_conditions=forced; end
@@ -125,7 +125,7 @@ end
 
 end
 
-function forced = dtct_forced_condition(trial)
+function forced = MPA_detect_forced_condition(trial)
 
 su = [trial(:).success];
 ef = [trial(:).effector];
