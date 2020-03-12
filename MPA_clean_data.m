@@ -1,4 +1,4 @@
-function monkeypsych_clean_data(datapath,dates)
+function MPA_clean_data(datapath,dates)
 % This function cleans and equalizes collected data structure fields
 % So far this includes
 % * Deleting the last trial if its empty
@@ -22,13 +22,13 @@ for m=1:numel(all_files_in_base_path)
     %cd(currentpath{:})
     %currentfiles
     
-    monkeypsych_clean_data_per_date(currentpath{:})
+    MPA_clean_data_per_date(currentpath{:})
 end
 
 end
 
 
-function monkeypsych_clean_data_per_date(datapath)
+function MPA_clean_data_per_date(datapath)
 dir_datapath=dir(datapath);
 for s=1: length(dir_datapath)
     if ismember('mat', dir_datapath(s).name)

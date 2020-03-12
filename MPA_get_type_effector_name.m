@@ -1,4 +1,4 @@
-function [type_effector type_effector_short typ eff]=get_type_effector_name(type,effector)
+function [type_effector type_effector_short typ eff]=MPA_get_type_effector_name(type,effector)
 switch type
     case 1
         typ='Fixation';

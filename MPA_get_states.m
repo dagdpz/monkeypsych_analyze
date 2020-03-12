@@ -1,4 +1,4 @@
-function get_MA_STATES
+function MPA_get_states
 global MA_STATES
 MA_STATES.INI_TRI       = 1; % initialize trial
 MA_STATES.FIX_ACQ       = 2; % fixation acquisition

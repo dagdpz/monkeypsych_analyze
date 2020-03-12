@@ -806,7 +806,7 @@ MA_load_globals
 if numel(trial)==0
     disp('no trials in this file')
 elseif isempty(trial(end).aborted_state)
-    disp('last trial is empty, consider running monkeypsych_clean_data');
+    disp('last trial is empty, consider running MPA_clean_data');
 end
 
 %% Preallocation part one (for discrimination part)

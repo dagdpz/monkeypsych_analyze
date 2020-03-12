@@ -1,4 +1,4 @@
-function MAGUI_working
+function MPA_gui
 get_default_key_values
 
 
@@ -790,7 +790,7 @@ set(f,'Visible','on');
             end
         elseif clean_data
             for m=1:numel(m)
-                monkeypsych_clean_data([to_run(m).path to_run(m).monkey],to_run(m).dates)
+                MPA_clean_data([to_run(m).path to_run(m).monkey],to_run(m).dates)
             end
         end
         

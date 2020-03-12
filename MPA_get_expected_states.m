@@ -1,9 +1,9 @@
-function get_expected_MA_states(type,effector,ignore_effector)
+function MPA_get_expected_states(type,effector,ignore_effector)
 if nargin<3
    ignore_effector=0; 
 end
 global MA_STATES
-get_MA_STATES
+MPA_get_states
 % switch type
 %     case 1 %fixation only
 %         MA_STATES.all_states    = [MA_STATES.INI_TRI MA_STATES.FIX_ACQ  MA_STATES.SAC_INI MA_STATES.REA_INI MA_STATES.FIX_HOL  MA_STATES.SAC_END MA_STATES.REA_END MA_STATES.SUCCESS  MA_STATES.REWARD  MA_STATES.ITI ];
