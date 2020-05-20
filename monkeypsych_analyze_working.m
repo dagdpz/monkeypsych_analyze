@@ -1558,8 +1558,9 @@ for n = 1:amount_of_selected_trials
         smpidx.state_1bo_i           = find(trial(n).state_i == states(n).state_1bo);
         smpidx.state_obs_i           = find(trial(n).state_i == states(n).state_obs);
         smpidx.state_1ao_i           = find(trial(n).state_i == states(n).state_1ao);
+        logsmpidx.not_iti             = ~(trial(n).state_i == MA_STATES.INI_TRI | trial(n).state_i == MA_STATES.ITI);
         %smpidx.state_1ao             = NaN; %???
-                
+        
         smpidx.state_1ao   =      find(trial(n).state   == states(n).state_1ao);
         if isempty (smpidx.state_1ao) && ~isempty (smpidx.state_obs)
             smpidx.state_1ao   =      numel(trial(n).state);
@@ -1764,8 +1765,8 @@ for n = 1:amount_of_selected_trials
         %        if true
         %             logsmpidx.sac_above         =(trial(n).eye_vel_i >= calcoptions.sac_ini_t & trial(n).state_i>MA_STATES.FIX_ACQ) ;
         %             logsmpidx.sac_under         =(trial(n).eye_vel_i <= calcoptions.sac_end_t & trial(n).state_i>MA_STATES.FIX_ACQ) ;
-        logsmpidx.sac_above         =(trial(n).eye_vel_i >= calcoptions.sac_ini_t) ;
-        logsmpidx.sac_under         =(trial(n).eye_vel_i <= calcoptions.sac_end_t) ;
+        logsmpidx.sac_above         =(trial(n).eye_vel_i >= calcoptions.sac_ini_t) & logsmpidx.not_iti ;
+        logsmpidx.sac_under         =(trial(n).eye_vel_i <= calcoptions.sac_end_t) & logsmpidx.not_iti ;
         smpidx.between_TH_start     =find([diff(logsmpidx.sac_above)==-1 | diff(logsmpidx.sac_under)==-1 false ]);
         smpidx.between_TH_end       =find([false diff(logsmpidx.sac_above)==1 | diff(logsmpidx.sac_under)==1 ]);
         if numel(smpidx.between_TH_end)>0 && numel(smpidx.between_TH_start)>0 && smpidx.between_TH_end(1)<= smpidx.between_TH_start(1)
@@ -1808,7 +1809,7 @@ for n = 1:amount_of_selected_trials
             sacidx_dur(end)=true;
         end
         nsacc_max=min(calcoptions.nsacc_max, sum(sacidx_dur));
-        sacidx_dur=sacidx_dur & cumsum(sacidx_dur)<=nsacc_max;
+        %sacidx_dur=sacidx_dur & cumsum(sacidx_dur)<=nsacc_max;
         smpidx.sac_start            =smpidx.sac_start(sacidx_dur);
         smpidx.sac_end              =smpidx.sac_end(sacidx_dur);
         n_samples_back              =6; % one more because < than...
@@ -1816,7 +1817,7 @@ for n = 1:amount_of_selected_trials
         
         smpidx.sac_amp_avarage                          = smpidx.sac_amp_start-n_samples_back;
         %smpidx.sac_amp_avarage(smpidx.sac_amp_avarage<1)=1;
-        for t=1:numel(smpidx.sac_start)
+        for t=1:nsacc_max
             saccades(n).vel_all(t)      = max(trial(n).eye_vel_i(smpidx.sac_start(t):smpidx.sac_end(t)));
             if smpidx.sac_amp_avarage(t)>average_window
                 saccades(n).startpos_all(t) = median(trial(n).x_eye_i((smpidx.sac_amp_avarage(t)-average_window):smpidx.sac_amp_avarage(t)))+1i*median(trial(n).y_eye_i((smpidx.sac_amp_avarage(t)-average_window):smpidx.sac_amp_avarage(t)));
