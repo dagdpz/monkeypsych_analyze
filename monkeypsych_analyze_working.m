@@ -1899,7 +1899,7 @@ for n = 1:amount_of_selected_trials
             disp('No valid saccade definition selected')
         end
         
-        saccades(n).vel_obs(1:n_obs)     = saccades(n).vel_all(logsmpidx.sac_obs);
+        saccades(n).vel_obs(1:n_obs)     = max(trial(n).eye_vel_i(smpidx.sac_start(logsmpidx.sac_obs):smpidx.sac_end(logsmpidx.sac_obs))); 
         saccades(n).ini_obs(1:n_obs)     = trial(n).time_axis_i(smpidx.sac_start(logsmpidx.sac_obs));
         saccades(n).end_obs(1:n_obs)     = trial(n).time_axis_i(smpidx.sac_end(logsmpidx.sac_obs));
         
