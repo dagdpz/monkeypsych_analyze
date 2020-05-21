@@ -1826,9 +1826,9 @@ for n = 1:amount_of_selected_trials
             end
             %saccades(n).startpos_all(t) = median(trial(n).x_eye_i(smpidx.sac_amp_avarage(t):smpidx.sac_amp_start(t)))+1i*median(trial(n).y_eye_i(smpidx.sac_amp_avarage(t):smpidx.sac_amp_start(t)));
         end
-        saccades(n).ini_all(1:nsacc_max)             = trial(n).time_axis_i(smpidx.sac_start);
-        saccades(n).end_all(1:nsacc_max)             = trial(n).time_axis_i(smpidx.sac_end);
-        saccades(n).endpos_all(1:nsacc_max)          = trial(n).x_eye_i(smpidx.sac_end) +1i*trial(n).y_eye_i(smpidx.sac_end);
+        saccades(n).ini_all(1:nsacc_max)             = trial(n).time_axis_i(smpidx.sac_start(1:nsacc_max));
+        saccades(n).end_all(1:nsacc_max)             = trial(n).time_axis_i(smpidx.sac_end(1:nsacc_max));
+        saccades(n).endpos_all(1:nsacc_max)          = trial(n).x_eye_i(smpidx.sac_end(1:nsacc_max)) +1i*trial(n).y_eye_i(smpidx.sac_end(1:nsacc_max));
         
         if isfield(trial(n),'microstim_state') && ~isnan(trial(n).microstim_state) && calcoptions.lat_after_micstim==1  && (trial(n).microstim==1 || keys.evok_val.simulate_evoked == 1)
             
