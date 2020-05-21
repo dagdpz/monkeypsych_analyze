@@ -1849,7 +1849,7 @@ for n = 1:amount_of_selected_trials
         smpidx.sac_start_obs_i                  = smpidx.sac_start(logsmpidx.sac_obs);
         n_obs                                   = sum(logsmpidx.sac_obs);
         saccades(n).endpos_obs(1:n_obs)         = trial(n).x_eye_i(smpidx.sac_end(logsmpidx.sac_obs)) +1i*trial(n).y_eye_i(smpidx.sac_end(logsmpidx.sac_obs));
-        saccades(n).startpos_obs(1:n_obs)       = saccades(n).startpos_all(logsmpidx.sac_obs);
+        saccades(n).startpos_obs(1:n_obs)       = trial(n).x_eye_i(smpidx.sac_start(logsmpidx.sac_obs)) +1i*trial(n).y_eye_i(smpidx.sac_start(logsmpidx.sac_obs));
         amp_obs                                 = abs(saccades(n).endpos_obs(1:n_obs) - saccades(n).startpos_obs(1:n_obs));
         saccades(n).amplitudes_obs(1:n_obs)     = amp_obs;
         
