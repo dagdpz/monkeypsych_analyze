@@ -3881,7 +3881,7 @@ s1=s1in(~isnan(s1in)&~isnan(s2in));
 s2=s2in(~isnan(s1in)&~isnan(s2in));
 if numel(unique(s1))>1 && numel(unique(s2))>1
 %     [r,sig] = corr([s1',s2'],'type',mode);
-    [slo, int, r, sig] = myregr_eye_hand(s1',s2',0,outliers);
+    [slo, int, r, sig] = beh_myregr_eye_hand(s1',s2',0,outliers);
 %     r=r(1,2);
 %     sig=sig(1,2);
 else
