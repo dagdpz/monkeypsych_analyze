@@ -419,8 +419,8 @@ default_key_values.simple_selective=repmat({NaN},1,numel(keys.simple_selective))
 keys.calcoptions={'runs_as_batches','keep_raw_data','saccade_definition','reach_definition','reach_1st_pos','reach_1st_pos_in','reach_pos_at_state_change',...
     'nsacc_max','sac_ini_t','sac_end_t','sac_min_dur','sac_int_xy','rea_int_xy','correct_offset',...
     'lat_after_micstim','sac_min_amp','sac_max_off','closest_target_radius','downsampling','eyetracker_sample_rate','smoothing_samples','i_sample_rate','correlation_conditions','parameters_to_correlate','correlation_mode','remove_outliers', ...
-    'passfilter'};
-default_key_values.calcoptions={0,0,1,0,0,1,0,5,200,50,0.03,[50 50],[100 100],1,0,2,50,NaN,0,220,12,1000,{'success'},{'lat','dur'},'pearson',0,{}};
+    'passfilter','difficulty_colors'};
+default_key_values.calcoptions={0,0,1,0,0,1,0,5,200,50,0.03,[50 50],[100 100],1,0,2,50,NaN,0,220,12,1000,{'success'},{'lat','dur'},'pearson',0,{},[128 0 0; 120 22 0; 60 60 0; 60 60 60]};
 
 keys.history={'current_structure','current_parameter','current_value','past_structure','past_parameter','past_value','past_keys','n_trials_past','consecutive_trials'};
 default_key_values.history={'trial','aborted_state',NaN,'trial','aborted_state',NaN,{},1,0};
@@ -1033,6 +1033,41 @@ for inu = 1:total_number_of_trials
         a_n_t_h(inu) = mod(a_i_t_h(inu),2)+1;
     end
     
+    %% Definition of new outputs for multiple distractors
+    if effector_sr(inu,1)
+      effector_field='eye';
+    else
+      effector_field='hnd';
+    end
+    
+    % difficulty
+    stimulus_colors=vertcat(trial(inu).task.(effector_field).tar.color_dim);
+    %difficulty_colors=[128 0 0; 120 22 0; 60 60 0; 60 60 60];
+    clear diff_idx
+    for sc=1:size(stimulus_colors,1)
+        [~,diff_idx(sc)]=min(sum(abs(bsxfun(@minus, calcoptions.difficulty_colors,stimulus_colors(sc,:))),2));
+    end
+    if any(diff_idx~=1 & diff_idx<=size(calcoptions.difficulty_colors,1)/2)
+        trial(inu).difficulty=2;
+    elseif any(diff_idx~=size(calcoptions.difficulty_colors,1) & diff_idx>size(calcoptions.difficulty_colors,1)/2)
+        trial(inu).difficulty=1;
+    else
+        trial(inu).difficulty=0;
+    end
+    
+    % stimulus type
+    tarpos=vertcat(trial(inu).(effector_field).tar.pos);
+    fixpos=trial(inu).(effector_field).fix(1).pos;
+    
+    trial(inu).n_targets=numel(trial(inu).(effector_field).tar);
+    trial(inu).stay_condition=any(ismember(trial(inu).task.correct_choice_target,find(sum(abs(bsxfun(@minus, tarpos(:,1:2),fixpos(:,1:2))),2)==0)));
+    trial(inu).n_nondistractors=numel( trial(inu).task.correct_choice_target)-trial(inu).stay_condition;
+    trial(inu).n_distractors=trial(inu).n_targets-trial(inu).n_nondistractors;
+    
+    % 1 vs 2 hemifields 
+     trial(inu).stimuli_in_2hemifields = any(tarpos(:,1)-fixpos(:,1)>0) && any(tarpos(:,1)-fixpos(:,1)<0);
+    
+    
     %% Selection of trials according to selection keys
     % Selection keys are compared to the current trial's task conditions,
     % discrimination variable vector for current trial indexed by key_ind is
@@ -1310,6 +1345,14 @@ end
 [task.reward_modulation]    = trial.reward_modulation;
 [task.reward_size]          = trial.reward_selected;
 [task.reward_time]          = trial.reward_time;
+
+[task.difficulty]               = trial.difficulty;
+[task.stay_condition]           = trial.stay_condition;
+[task.n_nondistractors]         = trial.n_nondistractors;
+[task.n_distractors]            = trial.n_distractors;
+[task.stimuli_in_2hemifields]   = trial.stimuli_in_2hemifields;
+
+
 
 if isfield(trial(1), 'abort_code')
     [task.abort_code]           = trial.abort_code;
