@@ -852,6 +852,7 @@ if  keys.evok_val.simulate_evoked == 1 %% && isfield(trial(1),'microstim')
 end
 
 
+
 %% Index Selection loop (!)
 % Use selection keys (and complex keys) to select trial indexes with the
 % logical vector idx.selection to use for analysis. Observed state (for
@@ -859,6 +860,14 @@ end
 % (taking means of positions in observed state in doubtful cases)
 
 for inu = 1:total_number_of_trials
+    
+    %% adding non-existent fields (guaranteeing backward compatibility)
+
+    if ~isfield(trial(inu).task,'correct_choice_target')
+        [trial(inu).task.correct_choice_target]=1;
+    end
+    
+    
     
     %% Task effector regulations
     % defining effector_sr (if saccade/reach is required), and
@@ -1061,7 +1070,7 @@ for inu = 1:total_number_of_trials
     
     trial(inu).n_targets=numel(trial(inu).(effector_field).tar);
     trial(inu).stay_condition=any(ismember(trial(inu).task.correct_choice_target,find(sum(abs(bsxfun(@minus, tarpos(:,1:2),fixpos(:,1:2))),2)==0)));
-    trial(inu).n_nondistractors=numel( trial(inu).task.correct_choice_target)-trial(inu).stay_condition;
+    trial(inu).n_nondistractors=numel(trial(inu).task.correct_choice_target)-trial(inu).stay_condition;
     trial(inu).n_distractors=trial(inu).n_targets-trial(inu).n_nondistractors;
     
     % 1 vs 2 hemifields 
@@ -1444,12 +1453,11 @@ for n = 1:amount_of_selected_trials
     end
     
     % correct choice target part
-    if isfield(trial(n).task,'correct_choice_target')
-        task(n).correct_targets=trial(n).task.correct_choice_target;        
-    end
+    task(n).correct_targets=trial(n).task.correct_choice_target;   
     saccades(n).target_selected=trial(n).target_selected(1);
     reaches(n).target_selected=trial(n).target_selected(2);
     
+        states(n).run_onset_time=trial(1).timestamp(6)+60*trial(1).timestamp(5)+3600*trial(1).timestamp(4);
     if numel(trial(n).state)>=2
         %% General part
         % trial time axis definition and time for relevant state change
@@ -1458,7 +1466,6 @@ for n = 1:amount_of_selected_trials
         % Demanded hand (according to task definition) setting
         
         %smpidx.total                 = 1:numel(trial(n).state);
-        states(n).run_onset_time=trial(1).timestamp(6)+60*trial(1).timestamp(5)+3600*trial(1).timestamp(4);
         t_state2=trial(n).tSample_from_time_start(trial(n).state==MA_STATES.FIX_ACQ);
         trial(n).time_axis  = trial(n).tSample_from_time_start - t_state2(1); % tSample_from_time_start = time from beginning of run
         
