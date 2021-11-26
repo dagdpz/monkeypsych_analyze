@@ -1254,6 +1254,7 @@ end
 % Note that even the trial structure itself is re-indexed and therefore reduced
 
 amount_of_selected_trials   = numel(selected);
+trial_orig                  = trial; % we need this to be able to concatinate all phys data and get proper trial starts
 trial                       = trial                     ([selected.trials]);
 
 s_i_t_e                     = a_i_t_e                   ([selected.trials])';
@@ -1411,11 +1412,12 @@ for n = 1:amount_of_selected_trials
         end
     end
     if ~isempty(keys.TDT_streams) && keys.calc_val.keep_raw_data
-       physiology(n).streams_tStart=trial(n).TDT_streams_tStart;
+        nn=selected(n).trials;
+        physiology(n).streams_tStart=trial(n).TDT_streams_tStart;
         for FN=keys.TDT_streams
         physiology(n).(FN{:})=trial(n).(FN{:});
         physiology(n).([FN{:} '_SR'])=trial(n).([FN{:} '_samplingrate']);
-            
+        physiology(n).([FN{:} '_t0_from_rec_start'])= numel([trial_orig(1:nn).(FN{:})])/trial_orig(nn).([FN{:} '_samplingrate'])-numel(trial_orig(nn).(FN{:}))/trial_orig(nn).([FN{:} '_samplingrate']) - trial(n).TDT_streams_tStart;    
         end 
     end
     states(n).trial_onset_time=trial(n).tSample_from_time_start(1);
@@ -1467,6 +1469,7 @@ for n = 1:amount_of_selected_trials
         
         %smpidx.total                 = 1:numel(trial(n).state);
         t_state2=trial(n).tSample_from_time_start(trial(n).state==MA_STATES.FIX_ACQ);
+        
         trial(n).time_axis  = trial(n).tSample_from_time_start - t_state2(1); % tSample_from_time_start = time from beginning of run
         
         if isempty(trial(n).reach_hand) % still unclear how that can happen ?
