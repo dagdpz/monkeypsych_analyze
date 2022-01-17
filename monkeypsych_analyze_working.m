@@ -395,14 +395,6 @@ function [out_comp, variable_to_test, counter]= monkeypsych_analyze_working(vara
 % default.history_values={'aborted_state',NaN,'aborted_state',-1,1};
 
 
-%close all
-%clear all
-
-% keys.calcoptions={'runs_as_batches','keep_raw_data','saccade_definition','reach_1st_pos','reach_1st_pos_in','reach_pos_at_state_change','saccade_2bo','saccade_1bo','saccade_obs',...
-%     'nsacc_max','sac_ini_t','sac_end_t','sac_min_dur','max_sac_dist','max_rea_dist','correct_offset','lat_after_micstim','min_sac_amplitude','closest_target_radius','downsampling','eyetracker_sample_rate','smoothing_samples','i_sample_rate'};
-% default_key_values.calcoptions={0,0,1,0,0,1,0,0,1,5,200,50,0.03,[50 50],[100 100],1,0,2,NaN,0,220,12,1000};
-
-
 %%%Start_keys
 keys.mode={'standard','error_analysis_mode','trial_history_mode','evaluate_evoked','without_evoked_saccades','after_evoked_saccades'};
 default_key_values.mode=[{1} repmat({0},1,numel(keys.mode)-1)];
@@ -413,7 +405,7 @@ default_key_values.complex_selective=repmat({NaN},1,numel(keys.complex_selective
 keys.simple_selective={'type','effector','choice','target_selected','success','microstim',...
     'microstim_state','microstim_start','stim_to_state_end','current_strength','train_duration_ms','pulse_duration_micro_ms',...
     'electrode_depth','impedance_start_kilo_ohms','impedance_end_kilo_ohms','impedance_after_cleaning_kilo_ohms','electrode_used','current_polarity',...
-    'abort_code','reward_modulation','reward_selected','reach_hand','difficulty','n_targets','n_nondistractors','n_distractors','stay_condition'};
+    'abort_code','reward_modulation','reward_selected','reach_hand','difficulty','n_targets','n_nondistractors','n_distractors','stay_condition','stimuli_in_2hemifields'};
 default_key_values.simple_selective=repmat({NaN},1,numel(keys.simple_selective));
 
 keys.calcoptions={'runs_as_batches','keep_raw_data','saccade_definition','reach_definition','reach_1st_pos','reach_1st_pos_in','reach_pos_at_state_change',...
@@ -480,9 +472,6 @@ for idx_batch = 1:number_of_batches
         keys.plot_val.show_trace=1;
         keys.plot_val.show_sliding=1;
     end
-    %     if ~isnan(keys.mode_val.evoked)
-    %         keys.mode_val.evoked_saccades_mode=1;
-    %     end
     
     % for empty datasets in this batch, take the first dataset (to simplify input)
     if ~isempty(temp_cells{idx_batch*2-1}) && size(temp_cells{idx_batch*2-1},2)>1
@@ -594,8 +583,6 @@ else
     n_columns=1;
 end
 
-%out_file=zeros(numel(batch_filenames),n_columns);
-
 for num_file=1:numel(batch_filenames)
     %t.Startf=GetSecs;
     filename=batch_filenames{num_file};
@@ -627,16 +614,8 @@ for num_file=1:numel(batch_filenames)
         filename='                    ';
         [trial.runname]=deal(filename(end-19:end-4));
         keys_current.setup=NaN;
-        %     trial.runname='Not existing';
-        %     trial.effector=-1;
-        %     trial.type=-1;
-        %     trial.target_selected=[];
-        %     trial.aborted_state=0;
-        %     trial.choice=0;
         trial=[];
     end
-    %t.Start=GetSecs;
-    %disp(['loading took ' num2str(t.Start-t.Startf) ' seconds']);
     keys_current.session    = str2double([filename(end-16:end-13),filename(end-11:end-10),filename(end-8:end-7)]);
     keys_current.run        = str2double(filename(end-5:end-4));
     
@@ -763,13 +742,9 @@ for num_file=1:numel(batch_filenames)
             out_file(num_file,k).keys=keys;
         end
     end
-    %disp(['processing took ' num2str(GetSecs-t.Start) ' seconds']);
 end
 
-
-
 if keys.calc_val.runs_as_batches
-    %out=cell2mat(out_file);
     out=out_file;
 else
     out_file=rmfield(out_file,{'statistic','correlation'});
@@ -788,10 +763,7 @@ end
 
 function [out,trial] = monkeypsych_analyze_calculation(trial,keys)
 
-%t.start_analyze=GetSecs;
-%t.accumulate=0;
 %% Key renaming for better handling
-%selcomp_keys  = keys.complex_selective;
 selsimp_keys  = keys.simple_selective;
 selcomp       = keys.csel_val;
 selsimp       = keys.ssel_val;
@@ -826,7 +798,7 @@ empty_cell              =repmat({''},1,total_number_of_trials);
 
 states=struct('all_states', empty_cell, 'state_2bo', empty_cell, 'state_1bo', empty_cell, 'state_obs', empty_cell, 'state_1ao', empty_cell, 'state_abo', empty_cell,...
     'state_sac', empty_cell, 'state_inf', empty_cell,'start_2bo', empty_cell,'start_1bo', empty_cell,'start_obs', empty_cell,'start_mis', empty_cell,'start_sac', empty_cell,'start_1ao', empty_cell,'start_end', empty_cell,...
-    'MP_states', empty_cell,'MP_state_onsets', empty_cell,'TDT_states', empty_cell,'TDT_state_onsets', empty_cell,'run_onset_time',empty_cell,'trial_onset_time', empty_cell);
+    'MP_states', empty_cell,'MP_states_onset', empty_cell,'TDT_states', empty_cell,'TDT_state_onsets', empty_cell,'run_onset_time',empty_cell,'trial_onset_time', empty_cell,'state2_onset_time', empty_cell);
 
 %% Microstim parameter definitions
 % stim_to_state_end redefinition from trial (instead of task !)
@@ -862,12 +834,9 @@ end
 for inu = 1:total_number_of_trials
     
     %% adding non-existent fields (guaranteeing backward compatibility)
-
     if ~isfield(trial(inu).task,'correct_choice_target')
         [trial(inu).task.correct_choice_target]=1;
     end
-    
-    
     
     %% Task effector regulations
     % defining effector_sr (if saccade/reach is required), and
@@ -1024,12 +993,6 @@ for inu = 1:total_number_of_trials
                 if any(median_dist<0)
                     a_i_t_h(inu)=find(median_dist==min(median_dist),1);
                 end
-                %                 choice_window   = calcoptions.rea_int_xy;
-                %                 if sum((target_pos{2}(1:2)-[median_x median_y]).^2) >= sum((target_pos{1}(1:2)-[median_x median_y]).^2) && all(target_pos{1}(1:2)-[median_x median_y] < choice_window)
-                %                     a_i_t_h(inu)=1;
-                %                 elseif sum((target_pos{2}(1:2)-[median_x median_y]).^2) <= sum((target_pos{1}(1:2)-[median_x median_y]).^2) && all(target_pos{2}(1:2)-[median_x median_y] < choice_window)
-                %                     a_i_t_h(inu)=2;
-                %                 end
             end
         end
     end
@@ -1051,7 +1014,6 @@ for inu = 1:total_number_of_trials
     
     % difficulty
     stimulus_colors=vertcat(trial(inu).task.(effector_field).tar.color_dim);
-    %difficulty_colors=[128 0 0; 120 22 0; 60 60 0; 60 60 60];
     clear diff_idx
     for sc=1:size(stimulus_colors,1)
         [~,diff_idx(sc)]=min(sum(abs(bsxfun(@minus, calcoptions.difficulty_colors,stimulus_colors(sc,:))),2));
@@ -1100,16 +1062,14 @@ for inu = 1:total_number_of_trials
         end
     end
     
-    %% Complex selection keys
-    % So far, position, aborted_state, and reach_hand selection need more complex discrimination
     
     %% tricky bug avoiding part !!!
     if isfield(trial,'task') && isfield(trial(inu).task,'reach_hand') && numel(trial(inu).task.reach_hand) ~= numel(trial(inu).reach_hand)
         trial(inu).reach_hand=NaN;
     end
     
-    
-    
+    %% Complex selection keys
+    % So far, position, aborted_state, and reach_hand selection need more complex discrimination
     % Position selection:
     % Fixation and target positions can be selected seperately
     % for targets and fixation targets (fix_x/pos_x f.e.), multiple position selections
@@ -1136,7 +1096,6 @@ for inu = 1:total_number_of_trials
         disc_var_c(1)=false;
     end
     disc_var_c(2)=disc_var_c(1);
-    
     
     disc_var_c(3)=true;
     if ~isnan(selcomp.cue_range_x(1)) && effector_sr(inu,1) && ~isnan(a_i_t_e(inu))
@@ -1237,7 +1196,7 @@ if sum(idx.selection)==0 || isempty(selcomp.trial_set) || (~any(isnan(selcomp.tr
         'session',trials_cell','run',trials_cell','setup',trials_cell','run_start_time',trials_cell','run_end_time',trials_cell');
     states=struct('all_states', trials_cell', 'state_2bo', trials_cell', 'state_1bo', trials_cell', 'state_obs', trials_cell', 'state_1ao', trials_cell', 'state_abo', trials_cell',...
         'state_sac', trials_cell','start_2bo', trials_cell','start_1bo', trials_cell','start_obs', trials_cell','start_mis', trials_cell','start_sac', trials_cell','start_1ao', trials_cell','start_end', trials_cell',...
-    'MP_states', trials_cell','MP_state_onsets', trials_cell','TDT_states', trials_cell','TDT_state_onsets', trials_cell','run_onset_time',trials_cell','trial_onset_time', trials_cell');
+    'MP_states', trials_cell','MP_states_onset', trials_cell','TDT_states', trials_cell','TDT_state_onsets', trials_cell','run_onset_time',trials_cell','trial_onset_time', trials_cell','state2_onset_time', trials_cell');
 else
     if all(~isnan(selcomp.trial_set))
         trials_cell = num2cell(intersect(all_trials(idx.selection), selcomp.trial_set));  % the vector selected.trials contains only the indexes of selected trials !!!
@@ -1279,17 +1238,6 @@ nanpar4=repmat({NaN(1,calcoptions.nsacc_max).*(1+1i)},amount_of_selected_trials,
 nanpar5=repmat({NaN(1,3)},amount_of_selected_trials,1);
 nanpar6=repmat({{NaN}},amount_of_selected_trials,1);
 nanpar7=repmat({{NaN(1,30)}},amount_of_selected_trials,1);
-
-
-% saccades=struct('lat', nanpar1, 'dur', nanpar1, 'velocity', nanpar1, 'vel_2bo', nanpar1, 'vel_1bo', nanpar1, 'vel_obs', nanpar1, 'vel_1ao', nanpar1,...
-%     'n_2bo', nanpar1, 'n_1bo', nanpar1, 'n_obs', nanpar1, 'n_1ao', nanpar1, 'num_sac', nanpar1, 'sel_n_sac', nanpar1, 'evoked', nanpar1,...
-%     'startpos', nanpar2,'endpos', nanpar2,'accuracy_xy', nanpar2,'accuracy_rad',nanpar2,'tar_pos_closest',nanpar2,...
-%     'ini_2bo',nanpar3,'ini_1bo',nanpar3,'ini_obs',nanpar3,'ini_1ao',nanpar3,'end_2bo',nanpar3,'end_1bo',nanpar3,'end_obs',nanpar3,'end_1ao',nanpar3,'ini_evo',nanpar1,...
-%     'endpos_2bo', nanpar4, 'endpos_1bo', nanpar4, 'endpos_obs', nanpar4, 'endpos_1ao',nanpar4, 'startpos_2bo', nanpar4, 'startpos_1bo', nanpar4, 'startpos_obs', nanpar4,'startpos_1ao',nanpar4,...
-%     'tar_pos', nanpar2,'nct_pos', nanpar2, 'tar_rad', nanpar1, 'fix_pos', nanpar2, 'fix_rad', nanpar1, 'col_dim', nanpar5, 'col_bri', nanpar5, ...
-%     'amplitudes_2bo',nanpar3,'amplitudes_1bo',nanpar3,'amplitudes_obs',nanpar3,'amplitudes_1ao',nanpar3,...
-%     'selected_convexity', nanpar1,'selected_convex_sides', nanpar1,'targets_inspected', nanpar1,'cue_pos', nanpar1,'n_targets', nanpar1,...
-%     'all_convexities', nanpar1,'all_convex_sides', nanpar1,'all_tar_pos',nanpar2,'all_inspection_durations', nanpar1,'exploration_time', nanpar1);
 
 saccades=struct('target_selected', nanpar1,'lat', nanpar1, 'dur', nanpar1, 'velocity', nanpar1, 'num_sac', nanpar1, 'sel_n_sac', nanpar1, 'evoked', nanpar1,'ini_evo',nanpar1,...
     'startpos', nanpar2,'endpos', nanpar2,'accuracy_xy', nanpar2,'accuracy_rad',nanpar2,'tar_pos_closest',nanpar2,...
@@ -1344,8 +1292,6 @@ end
 [selected.setup]            = deal(keys.setup);
 [selected.run_start_time]   = deal(trial(1).timestamp(4)   + trial(1).timestamp(5)/100);
 [selected.run_end_time]     = deal(trial(end).timestamp(4) + trial(end).timestamp(5)/100);
-% [selected.run_start_time]   = deal([num2str(trial(1).timestamp(4)) ':' num2str(trial(1).timestamp(5))]);
-% [selected.run_end_time]     = deal([num2str(trial(end).timestamp(4)) ':' num2str(trial(end).timestamp(5))]);
 
 [states.state_abo]          = trial.aborted_state;
 [states.state_sac,states.start_2bo,states.start_1bo,states.start_obs,states.start_mis,states.start_sac,states.start_1ao,states.start_end]=deal(NaN);
@@ -1361,8 +1307,6 @@ end
 [task.n_nondistractors]         = trial.n_nondistractors;
 [task.n_distractors]            = trial.n_distractors;
 [task.stimuli_in_2hemifields]   = trial.stimuli_in_2hemifields;
-
-
 
 if isfield(trial(1), 'abort_code')
     [task.abort_code]           = trial.abort_code;
@@ -1382,8 +1326,6 @@ if isfield(trial(1), 'current_strength')
 end
 if isfield(trial(1),'microstim') || keys.evok_val.simulate_evoked == 1
     [task.stim_to_state_end]=trial.stim_to_state_end;
-    %[task.stim_on]       =trial.microstim;
-    %[task.microstim]     =trial.microstim;
     logidx.microstim     =[trial.microstim]==1;
     [task.stim_start]    =trial.microstim_start;
     [task.stim_end]      =trial.microstim_end;
@@ -1400,7 +1342,6 @@ end
 
 %% Saccade and reaches calculation part
 for n = 1:amount_of_selected_trials
-    %t.start=GetSecs;
     if isfield(trial,'TDT_eNeu_t'); 
         physiology(n).spike_arrival_times=trial(n).TDT_eNeu_t;
         physiology(n).spike_waveforms=trial(n).TDT_eNeu_w;
@@ -1417,7 +1358,7 @@ for n = 1:amount_of_selected_trials
         for FN=keys.TDT_streams
         physiology(n).(FN{:})=trial(n).(FN{:});
         physiology(n).([FN{:} '_SR'])=trial(n).([FN{:} '_samplingrate']);
-        physiology(n).([FN{:} '_t0_from_rec_start'])= numel([trial_orig(1:nn).(FN{:})])/trial_orig(nn).([FN{:} '_samplingrate'])-numel(trial_orig(nn).(FN{:}))/trial_orig(nn).([FN{:} '_samplingrate']) - trial(n).TDT_streams_tStart;    
+        physiology(n).([FN{:} '_t0_from_rec_start'])= size([trial_orig(1:nn).(FN{:})],2)/trial_orig(nn).([FN{:} '_samplingrate'])-size(trial_orig(nn).(FN{:}),2)/trial_orig(nn).([FN{:} '_samplingrate']) - trial(n).TDT_streams_tStart;    
         end 
     end
     states(n).trial_onset_time=trial(n).tSample_from_time_start(1);
@@ -1436,20 +1377,28 @@ for n = 1:amount_of_selected_trials
     % reward modulation part
     if effector_sr(n,1) && ~isnan(s_i_t_e(n)) && s_i_t_e(n)<=2
         task(n).tar_rew_high            =trial(n).eye.tar(s_i_t_e(n)).reward_time(1);
+        if numel(trial(n).eye.tar(s_i_t_e(n)).reward_time)>1 %% Bacchus 20210903
         task(n).tar_rew_low             =trial(n).eye.tar(s_i_t_e(n)).reward_time(2);
+        end
         task(n).tar_rew_prob_high       =trial(n).eye.tar(s_i_t_e(n)).reward_prob;
         if ~isnan(n_i_t_e(n))
             task(n).nct_rew_high        =trial(n).eye.tar(n_i_t_e(n)).reward_time(1);
-            task(n).nct_rew_low         =trial(n).eye.tar(n_i_t_e(n)).reward_time(2);
+            if numel(trial(n).eye.tar(n_i_t_e(n)).reward_time)>1 %% Bacchus 20210903
+                task(n).nct_rew_low         =trial(n).eye.tar(n_i_t_e(n)).reward_time(2);
+            end
             task(n).nct_rew_prob_high   =trial(n).eye.tar(n_i_t_e(n)).reward_prob;
         end
     elseif effector_sr(n,2) && ~isnan(s_i_t_h(n)) && s_i_t_h(n)<=2
         task(n).tar_rew_high            =trial(n).hnd.tar(s_i_t_h(n)).reward_time(1);
+        if numel(trial(n).hnd.tar(s_i_t_h(n)).reward_time)>1
         task(n).tar_rew_low             =trial(n).hnd.tar(s_i_t_h(n)).reward_time(2);
+        end
         task(n).tar_rew_prob_high       =trial(n).hnd.tar(s_i_t_h(n)).reward_prob;
         if ~isnan(n_i_t_h(n))
             task(n).nct_rew_high        =trial(n).hnd.tar(n_i_t_h(n)).reward_time(1);
-            task(n).nct_rew_low         =trial(n).hnd.tar(n_i_t_h(n)).reward_time(2);
+            if numel(trial(n).hnd.tar(n_i_t_h(n)).reward_time)>1 %% Bacchus 20210903
+                task(n).nct_rew_low         =trial(n).hnd.tar(n_i_t_h(n)).reward_time(2);
+            end
             task(n).nct_rew_prob_high   =trial(n).hnd.tar(n_i_t_h(n)).reward_prob;
         end
     end
@@ -1459,7 +1408,7 @@ for n = 1:amount_of_selected_trials
     saccades(n).target_selected=trial(n).target_selected(1);
     reaches(n).target_selected=trial(n).target_selected(2);
     
-        states(n).run_onset_time=trial(1).timestamp(6)+60*trial(1).timestamp(5)+3600*trial(1).timestamp(4);
+    states(n).run_onset_time=trial(1).timestamp(6)+60*trial(1).timestamp(5)+3600*trial(1).timestamp(4);
     if numel(trial(n).state)>=2
         %% General part
         % trial time axis definition and time for relevant state change
@@ -1467,9 +1416,9 @@ for n = 1:amount_of_selected_trials
         % state was not reached.
         % Demanded hand (according to task definition) setting
         
-        %smpidx.total                 = 1:numel(trial(n).state);
-        t_state2=trial(n).tSample_from_time_start(trial(n).state==MA_STATES.FIX_ACQ);
-        
+        t_state2=trial(n).tSample_from_time_start(trial(n).state==MA_STATES.FIX_ACQ);      
+
+        states(n).state2_onset_time=t_state2(1);
         trial(n).time_axis  = trial(n).tSample_from_time_start - t_state2(1); % tSample_from_time_start = time from beginning of run
         
         if isempty(trial(n).reach_hand) % still unclear how that can happen ?
@@ -1478,31 +1427,23 @@ for n = 1:amount_of_selected_trials
         reaches(n).reach_hand=trial(n).reach_hand;
         task(n).reach_hand=trial(n).reach_hand;
         
-        % Interpolation (at calcoptions.i_sample_rate) for smoothing eye positions and
-        % velocities to detect saccades, affix '_i' refers to interpolated variables
+        % offset correction: optional re-alignment to fixation spot per trial
         if calcoptions.correct_offset == 1 && max(trial(n).state)>2
             [trial(n).x_eye,  trial(n).y_eye]    = offset_corrected(trial(n).x_eye, trial(n).y_eye, trial(n).state, MA_STATES.FIX_HOL, trial(n).eye.fix.pos(1) , trial(n).eye.fix.pos(2));
         end
-        %calcoptions.i_sample_rate                       = 1000; % Hz, interpolated sample rate
+        
+        % Downsampling to 'real' eye tracking data (monkeypsych samplingrate is 1kHz, so typically higher than eye tracking samplingrate !)
+        % And interpolating eye data to (at calcoptions.i_sample_rate) for smoothing eye positions and velocities to detect saccades, affix '_i' refers to interpolated variables
         if calcoptions.downsampling
             repeats_idx                         = [NaN; diff(trial(n).x_eye)]==0 & [NaN; diff(trial(n).y_eye)]==0;
-            %sampling_interrupt_idx              = [NaN; diff(trial(n).tSample_from_time_start)]>0.002;
-            %repeated_after_interrupt_idx        = find(repeats_idx & sampling_interrupt_idx);
             start_idx                           = [find(~repeats_idx)];
             end_idx                             = [find([~repeats_idx(2:end)]); numel(repeats_idx)];
             times_passed                        = [trial(n).tSample_from_time_start(end_idx)]-[trial(n).tSample_from_time_start(start_idx)];
             saccades(n).data_loss               = any(times_passed>(4/calcoptions.eyetracker_sample_rate));
-            long_periods                        = times_passed>(4/calcoptions.eyetracker_sample_rate);
-            start_idx_long_periods              = start_idx(long_periods);
-            end_idx_long_periods                = end_idx(long_periods);
-            repeated_samples_cell               = arrayfun(@(x,y) x:round(1/calcoptions.eyetracker_sample_rate*1000):y,start_idx_long_periods,end_idx_long_periods,'UniformOutput',false);
-            
-            %real_idx                            = unique([start_idx; [repeated_samples_cell{:}]'; repeated_after_interrupt_idx]);
             real_idx                            = [unique([start_idx ;end_idx(end)]);];
-            
-            %trial(n).time_axis_i                = trial(n).time_axis(1) : 1/calcoptions.i_sample_rate : trial(n).time_axis(real_idx(end));
             trial(n).time_axis_i                = ceil(trial(n).time_axis(1)*calcoptions.i_sample_rate)/calcoptions.i_sample_rate : 1/calcoptions.i_sample_rate : trial(n).time_axis(real_idx(end));
-            %probablz this line can go now
+            
+            %probably this line can go now
             if numel(real_idx)<2
                 real_idx=[1,numel(trial(n).x_eye)];
             end
@@ -1514,13 +1455,8 @@ for n = 1:amount_of_selected_trials
             trial(n).y_eye_i                    = filter_et(trial(n).y_eye_i, calcoptions.smoothing_samples);
             trial(n).eye_vel_i                  = [0 sqrt((diff(trial(n).x_eye_i).*calcoptions.i_sample_rate).^2+(diff(trial(n).y_eye_i).*calcoptions.i_sample_rate).^2)];
             trial(n).eye_vel_i                  = filter_et(trial(n).eye_vel_i, calcoptions.smoothing_samples);
-            if n>=2
-                
-            end
-            
+                       
         else
-            
-            %trial(n).time_axis_i                = trial(n).time_axis(1) : 1/calcoptions.i_sample_rate : trial(n).time_axis(end);
             trial(n).time_axis_i                = ceil(trial(n).time_axis(1)*calcoptions.i_sample_rate)/calcoptions.i_sample_rate : 1/calcoptions.i_sample_rate : trial(n).time_axis(end);
             if any(diff(trial(n).time_axis)==0) %% weirdness
                 idx_to_remove=diff(trial(n).time_axis)==0;
@@ -1548,44 +1484,30 @@ for n = 1:amount_of_selected_trials
             trial(n).eye_vel_i                  = [0 sqrt((diff(trial(n).x_eye_i).*calcoptions.i_sample_rate).^2+(diff(trial(n).y_eye_i).*calcoptions.i_sample_rate).^2)];
             trial(n).eye_vel_i                  = filter_et(trial(n).eye_vel_i, calcoptions.smoothing_samples);
         end
+
+        % identifying times of state changes
         smpidx.total_i                  = 1:numel(trial(n).time_axis_i);
-        %state_changes                   = [true; diff(trial(n).state)~=0];
-        idx_state_changes                   = find([true; diff(trial(n).state)~=0])';
-        %idx_state_changes               = smpidx.total(state_changes);
-        %idx_state_changes               = find(state_changes)';
-        
+        idx_state_changes               = find([true; diff(trial(n).state)~=0])';        
         idx_before_state_changes        = [1, idx_state_changes(2:end)-1];
-        times.state_changed             = [trial(n).time_axis(idx_state_changes); max(trial(n).time_axis_i(end),trial(n).time_axis(end))];
-        
-        %idx_state_changes_i             = [];
-        
+        times.state_changed             = [trial(n).time_axis(idx_state_changes); max(trial(n).time_axis_i(end),trial(n).time_axis(end))];        
         times.before_state_changed      = [trial(n).time_axis(idx_before_state_changes); max(trial(n).time_axis_i(end),trial(n).time_axis(end))];
         states_present                  = trial(n).state(idx_state_changes);
         times.state_change_obs          = times.state_changed(states_present==states(n).state_obs);
         times.before_state_change_obs   = times.before_state_changed(states_present==states(n).state_obs);
-        times.state_change_1ao          = times.state_changed(states_present==states(n).state_1ao);
-        %times.state_change_1ao_1_back   = times.before_state_changed(states_present==states(n).state_1ao);       
+        times.state_change_1ao          = times.state_changed(states_present==states(n).state_1ao);      
         
         states(n).MP_states=[states_present' MA_STATES.ITI];
         states(n).MP_states_onset=times.state_changed;
-        %% instead of interpolation, extension of states according to interpolated time scale
         
-        
+        %% instead of interpolation, extension of states according to interpolated time scale        
         N_states=numel(states_present);
         trial(n).state_i=zeros(size(trial(n).time_axis_i));
         for state_idx=1:N_states
             current_state=states_present(state_idx);
-%             current_state_start=times.state_changed(state_idx);
-%             current_state_end=times.state_changed(state_idx+1);
-%             calcoptions.i_sample_rate
             current_state_start=floor(times.state_changed(state_idx)*calcoptions.i_sample_rate)/calcoptions.i_sample_rate;
-            current_state_end=floor(times.state_changed(state_idx+1)*calcoptions.i_sample_rate)/calcoptions.i_sample_rate;
-            
+            current_state_end=floor(times.state_changed(state_idx+1)*calcoptions.i_sample_rate)/calcoptions.i_sample_rate;            
             trial(n).state_i(trial(n).time_axis_i>=current_state_start & trial(n).time_axis_i<current_state_end)=current_state;
-            %trial(n).state_i(trial(n).time_axis_i>=current_state_start & trial(n).time_axis_i<current_state_end)=deal(current_state);
         end
-        %C=arrayfun(@(x,y,z) repmat(z,1,sum(trial(n).time_axis_i<y & trial(n).time_axis_i>=x)) ,times.state_changed(1:end-1),times.state_changed(2:end),states_present,'UniformOutput',false);
-        %trial(n).state_i=[C{:}];
         
         if calcoptions.keep_raw_data
             raw(n).states       =trial(n).state_i;
@@ -1597,8 +1519,7 @@ for n = 1:amount_of_selected_trials
             raw(n).x_hnd        = interp1(trial(n).time_axis, trial(n).x_hnd, trial(n).time_axis_i, 'linear');
             raw(n).y_hnd        = interp1(trial(n).time_axis, trial(n).y_hnd, trial(n).time_axis_i, 'linear');
         end
-        
-        
+               
         
         % Sample indexes definition for observed state and state after
         % (used afterwards for reaches definitions) and interpolated indexes for states before observed
@@ -1612,13 +1533,11 @@ for n = 1:amount_of_selected_trials
         smpidx.state_obs_i           = find(trial(n).state_i == states(n).state_obs);
         smpidx.state_1ao_i           = find(trial(n).state_i == states(n).state_1ao);
         logsmpidx.not_iti             = ~(trial(n).state_i == MA_STATES.INI_TRI | trial(n).state_i == MA_STATES.ITI);
-        %smpidx.state_1ao             = NaN; %???
         
         smpidx.state_1ao   =      find(trial(n).state   == states(n).state_1ao);
         if isempty (smpidx.state_1ao) && ~isempty (smpidx.state_obs)
             smpidx.state_1ao   =      numel(trial(n).state);
-        end
-        
+        end        
         if ~isempty(smpidx.state_1ao_i)
             states(n).start_1ao =trial(n).time_axis_i(smpidx.state_1ao_i(1));
         end
@@ -1815,9 +1734,6 @@ for n = 1:amount_of_selected_trials
         
         
         %%     SACCADES
-        %        if true
-        %             logsmpidx.sac_above         =(trial(n).eye_vel_i >= calcoptions.sac_ini_t & trial(n).state_i>MA_STATES.FIX_ACQ) ;
-        %             logsmpidx.sac_under         =(trial(n).eye_vel_i <= calcoptions.sac_end_t & trial(n).state_i>MA_STATES.FIX_ACQ) ;
         logsmpidx.sac_above         =(trial(n).eye_vel_i >= calcoptions.sac_ini_t) & logsmpidx.not_iti ;
         logsmpidx.sac_under         =(trial(n).eye_vel_i <= calcoptions.sac_end_t) & logsmpidx.not_iti ;
         smpidx.between_TH_start     =find([diff(logsmpidx.sac_above)==-1 | diff(logsmpidx.sac_under)==-1 false ]);
@@ -1862,14 +1778,12 @@ for n = 1:amount_of_selected_trials
             sacidx_dur(end)=true;
         end
         nsacc_max=min(calcoptions.nsacc_max, sum(sacidx_dur));
-        %sacidx_dur=sacidx_dur & cumsum(sacidx_dur)<=nsacc_max;
         smpidx.sac_start            =smpidx.sac_start(sacidx_dur);
         smpidx.sac_end              =smpidx.sac_end(sacidx_dur);
         n_samples_back              =6; % one more because < than...
         average_window              =10;
         
         smpidx.sac_amp_avarage                          = smpidx.sac_amp_start-n_samples_back;
-        %smpidx.sac_amp_avarage(smpidx.sac_amp_avarage<1)=1;
         for t=1:nsacc_max
             saccades(n).vel_all(t)      = max(trial(n).eye_vel_i(smpidx.sac_start(t):smpidx.sac_end(t)));
             if smpidx.sac_amp_avarage(t)>average_window
@@ -1982,279 +1896,9 @@ for n = 1:amount_of_selected_trials
             lat_lockedtomicrostimstate=[saccades(n).ini_all-task(n).ini_mis];
             dir_lockedtomicrostimstate=[saccades(n).endpos_all-saccades(n).startpos_all];
         end
-        %        else
-        %
-        %             calcoptions.saccade_states=logical([1 1 1 1]);
-        %             relevant_states=[states(n).state_2bo states(n).state_1bo states(n).state_obs states(n).state_1ao];
-        %             state_selector = relevant_states(calcoptions.saccade_states);
-        %             logsmpidx.sac_above=(trial(n).eye_vel_i >= calcoptions.sac_ini_t) & ismember(trial(n).state_i,state_selector);
-        %             logsmpidx.sac_under=(trial(n).eye_vel_i <= calcoptions.sac_end_t) ;
-        %
-        %             if isfield(trial(n),'microstim_state') && ~isnan(trial(n).microstim_state) && calcoptions.lat_after_micstim==1  && (trial(n).microstim==1 || keys.evok_val.simulate_evoked == 1)
-        %                 state_selector = [states(n).all_states(circshift(states(n).all_states==trial(n).microstim_state,[1 1])),trial(n).microstim_state,states(n).state_1ao];
-        %
-        %                 after_stim=[trial(n).time_axis(trial(n).state== trial(n).microstim_state)'+trial(n).microstim_start,trial(n).time_axis_i(end),trial(n).time_axis_i(end) ];
-        %                 logsmpidx.after_micstim=trial(n).time_axis_i > after_stim(2);
-        %                 logsmpidx.sac_above=(trial(n).eye_vel_i >= calcoptions.sac_ini_t) & ismember(trial(n).state_i,state_selector) & logsmpidx.after_micstim;
-        %             end
-        %
-        %             smpidx.sac_start        =NaN(1,calcoptions.nsacc_max);
-        %             smpidx.sac_end          =NaN(1,calcoptions.nsacc_max);
-        %             smpidx.max_vel          =NaN(1,calcoptions.nsacc_max);
-        %             sac_start_pos           =NaN(1,calcoptions.nsacc_max);
-        %
-        %
-        %             %% Saccade calculation part
-        %
-        %             pot_sac_starts_log                  = logical([0 diff(logsmpidx.sac_above)==1]);
-        %             max_num_sacc                        = min(calcoptions.nsacc_max, numel(smpidx.total_i(pot_sac_starts_log)));
-        %             counter=1;
-        %             pot_sac_starts_log_temp=pot_sac_starts_log;
-        %
-        %             while counter <= max_num_sacc
-        %                 counter=counter+1;
-        %                 nsacc=counter-1;
-        %                 pot_sac_starts_smp              = smpidx.total_i(pot_sac_starts_log_temp);
-        %                 if ~isempty(pot_sac_starts_smp)
-        %                     smpidx.sac_start(nsacc)     = pot_sac_starts_smp(1);
-        %                     pot_sac_ends_smp            = smpidx.total_i(smpidx.total_i >= smpidx.sac_start(nsacc) & logsmpidx.sac_under);
-        %                     if ~isempty (pot_sac_ends_smp) %% && pot_sac_ends_smp(1) - smpidx.sac_start(nsacc) >= calcoptions.sac_min_dur %% maybe crucial duration criterion!!
-        %                         pot_sac_starts_log_temp      =pot_sac_starts_log_temp & smpidx.total_i >=pot_sac_ends_smp(1);
-        %
-        %                         % Duration criterion!!
-        %                         if pot_sac_ends_smp(1) - pot_sac_starts_smp(1) <= calcoptions.sac_min_dur
-        %                             counter=counter-1;
-        %                             continue
-        %                         end
-        %                         smpidx.sac_end(nsacc)   =  pot_sac_ends_smp(1);
-        %                         Maximum_velocities=smpidx.total_i(trial(n).eye_vel_i==max(trial(n).eye_vel_i(smpidx.sac_start(nsacc):smpidx.sac_end(nsacc))));
-        %                         smpidx.max_vel(nsacc)=Maximum_velocities(1);
-        %                     end
-        %
-        %                     % recently added amplitude start part
-        %                     n_samples_back=5;
-        %                     average_window=10;
-        %                     sac_amp_starts = smpidx.total_i(smpidx.total_i < smpidx.sac_start(nsacc))-n_samples_back;
-        %                     if ~isempty(sac_amp_starts) && sac_amp_starts(end)>average_window
-        %                         sac_start_pos(nsacc)= median(trial(n).x_eye_i((sac_amp_starts(end)-average_window):sac_amp_starts(end))) +1i*median(trial(n).y_eye_i((sac_amp_starts(end)-average_window):sac_amp_starts(end)));
-        %                     elseif ~isempty(sac_amp_starts)
-        %                         sac_start_pos(nsacc)=trial(n).x_eye_i(sac_amp_starts(end)+n_samples_back)+1i*trial(n).y_eye_i(sac_amp_starts(end)+n_samples_back);
-        %                     end
-        %                 else
-        %                     continue
-        %                 end
-        %             end
-        %
-        %             % for providing saccade initiation for error trials
-        %             last_saccade_initiated=find(~isnan(smpidx.sac_start),1,'last');
-        %             smpidx.sac_start(isnan(smpidx.sac_end(1:last_saccade_initiated-1)))=NaN;
-        %             if isnan(smpidx.sac_end(last_saccade_initiated))
-        %                 smpidx.sac_end(last_saccade_initiated)=smpidx.total_i(end);
-        %                 smpidx.max_vel(last_saccade_initiated)=smpidx.total_i(end);
-        %             end
-        %
-        %             logsmpidx.sac_2bo      = ismember(smpidx.sac_start,smpidx.state_2bo_i);
-        %             logsmpidx.sac_1bo      = ismember(smpidx.sac_start,smpidx.state_1bo_i);
-        %             logsmpidx.sac_obs      = ismember(smpidx.sac_start,smpidx.state_obs_i);
-        %             logsmpidx.sac_1ao      = ismember(smpidx.sac_start,smpidx.state_1ao_i);
-        %
-        %             smpidx.sac_start_2bo_i      = smpidx.sac_start(logsmpidx.sac_2bo);
-        %             smpidx.sac_start_1bo_i      = smpidx.sac_start(logsmpidx.sac_1bo);
-        %             smpidx.sac_start_obs_i      = smpidx.sac_start(logsmpidx.sac_obs);
-        %             smpidx.sac_start_1ao_i      = smpidx.sac_start(logsmpidx.sac_1ao);
-        %
-        %             n_2bo                               = sum(logsmpidx.sac_2bo);
-        %             n_1bo                               = sum(logsmpidx.sac_1bo);
-        %             n_obs                               = sum(logsmpidx.sac_obs);
-        %             n_1ao                               = sum(logsmpidx.sac_1ao);
-        %
-%                     saccades(n).n_2bo               = n_2bo;
-%                     saccades(n).n_1bo               = n_1bo;
-                    saccades(n).n_obs               = n_obs;
-%                    saccades(n).n_1ao               = n_1ao;
-        %
-        %             saccades(n).endpos_2bo(1:n_2bo)     = trial(n).x_eye_i(smpidx.sac_end(logsmpidx.sac_2bo)) +1i*trial(n).y_eye_i(smpidx.sac_end(logsmpidx.sac_2bo));
-        %             saccades(n).endpos_1bo(1:n_1bo)     = trial(n).x_eye_i(smpidx.sac_end(logsmpidx.sac_1bo)) +1i*trial(n).y_eye_i(smpidx.sac_end(logsmpidx.sac_1bo));
-        %             saccades(n).endpos_obs(1:n_obs)     = trial(n).x_eye_i(smpidx.sac_end(logsmpidx.sac_obs)) +1i*trial(n).y_eye_i(smpidx.sac_end(logsmpidx.sac_obs));
-        %             saccades(n).endpos_1ao(1:n_1ao)     = trial(n).x_eye_i(smpidx.sac_end(logsmpidx.sac_1ao)) +1i*trial(n).y_eye_i(smpidx.sac_end(logsmpidx.sac_1ao));
-        %
-        %             saccades(n).startpos_2bo(1:n_2bo)   = sac_start_pos(logsmpidx.sac_2bo);
-        %             saccades(n).startpos_1bo(1:n_1bo)   = sac_start_pos(logsmpidx.sac_1bo);
-        %             saccades(n).startpos_obs(1:n_obs)   = sac_start_pos(logsmpidx.sac_obs);
-        %             saccades(n).startpos_1ao(1:n_1ao)   = sac_start_pos(logsmpidx.sac_1ao);
-        %
-        %             amp_2bo= abs(saccades(n).endpos_2bo(1:n_2bo) - saccades(n).startpos_2bo(1:n_2bo));
-        %             amp_1bo= abs(saccades(n).endpos_1bo(1:n_1bo) - saccades(n).startpos_1bo(1:n_1bo));
-        %             amp_obs= abs(saccades(n).endpos_obs(1:n_obs) - saccades(n).startpos_obs(1:n_obs));
-        %             amp_1ao= abs(saccades(n).endpos_1ao(1:n_1ao) - saccades(n).startpos_1ao(1:n_1ao));
-        %
-        %             saccades(n).amplitudes_2bo(1:n_2bo)  = amp_2bo;
-        %             saccades(n).amplitudes_1bo(1:n_1bo)  = amp_1bo;
-        %             saccades(n).amplitudes_obs(1:n_obs)  = amp_obs;
-        %             saccades(n).amplitudes_1ao(1:n_1ao)  = amp_1ao;
-        %
-        %             All_n_sac=1:calcoptions.nsacc_max;
-        %
-        %             if calcoptions.saccade_definition==1
-        %                 % closest saccade, if it was big enough
-        %
-        %                 s_big_amplitudes_2bo   = amp_2bo>=calcoptions.sac_min_amp;
-        %                 s_big_amplitudes_1bo   = amp_1bo>=calcoptions.sac_min_amp;
-        %                 s_big_amplitudes_obs   = amp_obs>=calcoptions.sac_min_amp;
-        %                 %s_big_amplitudes_1ao   = amp_1ao>=calcoptions.sac_min_amp;
-        %
-        %                 distance_2bo=abs(saccades(n).endpos_2bo - saccades(n).tar_pos);
-        %                 distance_1bo=abs(saccades(n).endpos_1bo - saccades(n).tar_pos);
-        %                 distance_obs=abs(saccades(n).endpos_obs - saccades(n).tar_pos);
-        %                 %distance_1ao=abs(saccades(n).endpos_1ao - saccades(n).tar_pos);
-        %
-        %                 sel_n_2bo=All_n_sac(distance_2bo==min([distance_2bo(s_big_amplitudes_2bo),inf]));
-        %                 sel_n_1bo=All_n_sac(distance_1bo==min([distance_1bo(s_big_amplitudes_1bo),inf]));
-        %                 sel_n_obs=All_n_sac(distance_obs==min([distance_obs(s_big_amplitudes_obs),inf]));
-        %                 %sel_n_1ao=All_n_sac(distance_1ao==min([distance_1ao(s_big_amplitudes_1ao),inf]));
-        %
-        %             elseif calcoptions.saccade_definition==2
-        %                 % biggest saccade, if it was close enough
-        %
-        %                 close_2bo=abs(saccades(n).endpos_2bo - saccades(n).tar_pos)<= max(calcoptions.sac_max_off);
-        %                 close_1bo=abs(saccades(n).endpos_1bo - saccades(n).tar_pos)<= max(calcoptions.sac_max_off);
-        %                 close_obs=abs(saccades(n).endpos_obs - saccades(n).tar_pos)<= max(calcoptions.sac_max_off);
-        %                 %close_1ao=abs(saccades(n).endpos_1ao - saccades(n).tar_pos)<= max(calcoptions.sac_max_off);
-        %
-        %                 sel_n_2bo=All_n_sac(amp_2bo==max([amp_2bo(close_2bo),0]));
-        %                 sel_n_1bo=All_n_sac(amp_1bo==max([amp_1bo(close_1bo),0]));
-        %                 sel_n_obs=All_n_sac(amp_obs==max([amp_obs(close_obs),0]));
-        %                 %sel_n_1ao=All_n_sac(amp_1ao==max([amp_1ao(close_1ao),0]));
-        %
-        %             elseif calcoptions.saccade_definition==3
-        %                 % last saccade in the state, in observed state the one that entered
-        %                 % the window
-        %
-        %                 sel_n_2bo=n_2bo;
-        %                 sel_n_1bo=n_1bo;
-        %                 sel_n_obs=n_obs;
-        %                 %sel_n_1ao=n_1ao;
-        %
-        %             elseif calcoptions.saccade_definition==4
-        %                 % first saccade in the state
-        %
-        %                 sel_n_2bo=1;
-        %                 sel_n_1bo=1;
-        %                 sel_n_obs=1;
-        %                 %sel_n_1ao=1;
-        %
-        %             elseif calcoptions.saccade_definition==5
-        %                 % first saccade inside any of the potential targets in this run
-        %                 sel_n_2bo=[];
-        %                 sel_n_1bo=[];
-        %                 sel_n_obs=[];
-        %                 %sel_n_1ao=[];
-        %                 if numel(closest_target_radius)<=1
-        %                     current_closest_radius=closest_target_radius;
-        %                 else
-        %                     current_closest_radius=closest_target_radius(n);
-        %                 end
-        %                 for sac_idx=1:n_2bo
-        %                     if any(abs(unique_eye_target_positions-saccades(n).endpos_2bo(sac_idx))<=current_closest_radius)
-        %                         sel_n_2bo=sac_idx;
-        %                         break
-        %                     end
-        %                 end
-        %                 for sac_idx=1:n_1bo
-        %                     if any(abs(unique_eye_target_positions-saccades(n).endpos_1bo(sac_idx))<=current_closest_radius)
-        %                         sel_n_1bo=sac_idx;
-        %                         break
-        %                     end
-        %                 end
-        %                 for sac_idx=1:n_obs
-        %                     if any(abs(unique_eye_target_positions-saccades(n).endpos_obs(sac_idx))<=current_closest_radius)
-        %                         sel_n_obs=sac_idx;
-        %                         break
-        %                     end
-        %                 end
-        %                 for sac_idx=1:n_1ao
-        %                     if any(abs(unique_eye_target_positions-saccades(n).endpos_1ao(sac_idx))<=current_closest_radius)
-        %                         %sel_n_1ao=sac_idx;
-        %                         break
-        %                     end
-        %                 end
-        %             else
-        %             end
-        %
-        %             saccades(n).vel_2bo(1:n_2bo)     = trial(n).eye_vel_i(smpidx.max_vel(logsmpidx.sac_2bo));
-        %             saccades(n).vel_1bo(1:n_1bo)     = trial(n).eye_vel_i(smpidx.max_vel(logsmpidx.sac_1bo));
-        %             saccades(n).vel_obs(1:n_obs)     = trial(n).eye_vel_i(smpidx.max_vel(logsmpidx.sac_obs));
-        %
-        %             saccades(n).ini_2bo(1:n_2bo)    = trial(n).time_axis_i(smpidx.sac_start(logsmpidx.sac_2bo));
-        %             saccades(n).ini_1bo(1:n_1bo)    = trial(n).time_axis_i(smpidx.sac_start(logsmpidx.sac_1bo));
-        %             saccades(n).ini_obs(1:n_obs)    = trial(n).time_axis_i(smpidx.sac_start(logsmpidx.sac_obs));
-        %             saccades(n).ini_1ao(1:n_1ao)    = trial(n).time_axis_i(smpidx.sac_start(logsmpidx.sac_1ao));
-        %
-        %             saccades(n).end_obs(1:n_obs)     =     trial(n).time_axis_i(smpidx.sac_end(logsmpidx.sac_obs));
-        %             saccades(n).end_1bo(1:n_1bo)     =     trial(n).time_axis_i(smpidx.sac_end(logsmpidx.sac_1bo));
-        %             saccades(n).end_2bo(1:n_2bo)     =     trial(n).time_axis_i(smpidx.sac_end(logsmpidx.sac_2bo));
-        %             saccades(n).end_1ao(1:n_1ao)     =     trial(n).time_axis_i(smpidx.sac_end(logsmpidx.sac_1ao));
-        %
-        %             lat_lockedtomicrostimstate=[];
-        %             if isfield(trial,'microstim_start')  && (trial(n).microstim==1 || keys.evok_val.simulate_evoked == 1) && (~isnan(trial(n).microstim_start) || ~isnan(trial(n).stim_to_state_end))
-        %                 microstim_delay                   = trial(n).time_axis_i (trial(n).state_i ==trial(n).microstim_state);
-        %                 if ~isempty(microstim_delay)
-        %                     states(n).start_mis               = microstim_delay(1);
-        %                     task(n).ini_mis                   = microstim_delay(1)+trial(n).microstim_start;
-        %                 end
-        %                 if states(n).state_2bo==trial(n).microstim_state
-        %                     lat_lockedtomicrostimstate=[saccades(n).ini_2bo-task(n).ini_mis saccades(n).ini_1bo-task(n).ini_mis];
-        %                     dir_lockedtomicrostimstate=[saccades(n).endpos_2bo saccades(n).endpos_1bo]-[saccades(n).startpos_2bo saccades(n).startpos_1bo];
-        %                 elseif states(n).state_1bo==trial(n).microstim_state
-        %                     lat_lockedtomicrostimstate=[saccades(n).ini_1bo-task(n).ini_mis saccades(n).ini_obs-task(n).ini_mis];
-        %                     dir_lockedtomicrostimstate=[saccades(n).endpos_1bo saccades(n).endpos_obs]-[saccades(n).startpos_1bo saccades(n).startpos_obs];
-        %                 elseif states(n).state_obs==trial(n).microstim_state
-        %                     lat_lockedtomicrostimstate=saccades(n).ini_obs-task(n).ini_mis;
-        %                     dir_lockedtomicrostimstate=[saccades(n).endpos_obs]-[saccades(n).startpos_obs];
-        %                 end
-        %                 %     elseif isfield(trial,'microstim_start')  && trial(n).microstim==1
-        %                 %         microstim_delay=0;
-        %             end
-        %
-        %
-        %             if  1
-        %                 if ~isempty(smpidx.sac_start_obs_i) && ~isempty(sel_n_obs)
-        %                     states(n).state_sac         =     states(n).state_obs;
-        %                     saccades(n).lat             =     saccades(n).ini_obs(sel_n_obs) - states(n).start_obs;
-        %                     saccades(n).dur             =     saccades(n).end_obs(sel_n_obs) - saccades(n).ini_obs(sel_n_obs);
-        %                     saccades(n).endpos          =     saccades(n).endpos_obs(sel_n_obs);
-        %                     saccades(n).startpos        =     saccades(n).startpos_obs(sel_n_obs);
-        %                     saccades(n).velocity        =     saccades(n).vel_obs(sel_n_obs);
-        %                     saccades(n).num_sac         =     n_obs ;
-        %                     saccades(n).sel_n_sac       =     sel_n_obs ;
-        %                     states(n).start_sac         =     states(n).start_obs;
-        %                 end
-        %             elseif calcoptions.saccade_1bo
-        %                 if ~isempty(smpidx.sac_start_1bo_i) && ~isempty(sel_n_1bo)
-        %                     states(n).state_sac         =     states(n).state_1bo;
-        %                     saccades(n).lat             =     saccades(n).ini_1bo(sel_n_1bo) - states(n).start_1bo;
-        %                     saccades(n).dur             =     saccades(n).end_1bo(sel_n_1bo) - saccades(n).ini_1bo(sel_n_1bo);
-        %                     saccades(n).endpos          =     saccades(n).endpos_1bo(sel_n_1bo);
-        %                     saccades(n).startpos        =     saccades(n).startpos_1bo(sel_n_1bo);
-        %                     saccades(n).velocity        =     saccades(n).vel_1bo(sel_n_1bo);
-        %                     saccades(n).num_sac         =     n_1bo;
-        %                     saccades(n).sel_n_sac       =     sel_n_obs ;
-        %                     states(n).start_sac         =     states(n).start_1bo;
-        %                 end
-        %             elseif calcoptions.saccade_2bo
-        %                 if ~isempty(smpidx.sac_start_2bo_i) && ~isempty(sel_n_2bo)
-        %                     states(n).state_sac         =     states(n).state_2bo;
-        %                     saccades(n).lat             =     saccades(n).ini_2bo(sel_n_2bo) - states(n).start_2bo;
-        %                     saccades(n).dur             =     saccades(n).end_2bo(sel_n_2bo) - saccades(n).ini_2bo(sel_n_2bo);
-        %                     saccades(n).endpos          =     saccades(n).endpos_2bo(sel_n_2bo);
-        %                     saccades(n).startpos        =     saccades(n).startpos_2bo(sel_n_2bo);
-        %                     saccades(n).velocity        =     saccades(n).vel_2bo(sel_n_2bo);
-        %                     saccades(n).num_sac         =     n_2bo;
-        %                     saccades(n).sel_n_sac       =     sel_n_obs ;
-        %                     states(n).start_sac         =     states(n).start_2bo;
-        %                 end
-        %             end
-        %        end
+        
+        saccades(n).n_obs               = n_obs;
+
         if isfield(trial,'microstim_start') && ~isnan(trial(n).microstim_start) && (trial(n).microstim || keys.evok_val.simulate_evoked == 1) && calcoptions.lat_after_micstim
             if  calcoptions.saccade_obs && ~isempty(smpidx.sac_start_obs_i)
                 saccades(n).lat             =     saccades(n).ini_obs(n_obs) - task(n).ini_mis;
@@ -2316,7 +1960,6 @@ for n = 1:amount_of_selected_trials
                     if trial(n).completed && numel(times.state_change_1ao)==numel(times.before_state_change_obs) %% due to manual skipping, should be removed in clean_data
                         saccades(n).all_inspection_durations=[times.before_state_change_obs(2:end)'-times.state_change_1ao(1:end-1)', trial(n).task.timing.tar_time_hold];
                         saccades(n).all_inspection_intervals=[times.state_change_1ao' - times.before_state_change_obs'];
-                        %saccades(n).all_inspection_durations=times.before_state_change_obs(2:end)'-times.state_change_1ao(1:end-1)';
                     elseif numel(times.before_state_change_obs)==numel(times.state_change_1ao) % unfortunately the case sometimes in early versions... running out of time??
                         saccades(n).all_inspection_durations=[times.before_state_change_obs(2:end)', times.state_changed(end)]-times.state_change_1ao(1:end)';
                         saccades(n).all_inspection_intervals=[times.state_change_1ao' - times.before_state_change_obs'];
@@ -2393,11 +2036,6 @@ logidx.eyetar_r =(real([saccades.tar_pos] - [saccades.fix_pos]) > 0) | ([saccade
 logidx.hndtar_l =(real([reaches.tar_pos]  - [reaches.fix_pos ]) < 0) | ([reaches.tar_pos] ==[reaches.fix_pos]  & [reaches.tar_pos]  <0);  % if there was a reach target on the left side
 logidx.hndtar_r =(real([reaches.tar_pos]  - [reaches.fix_pos ]) > 0) | ([reaches.tar_pos] ==[reaches.fix_pos]  & [reaches.tar_pos]  >0);  % if there was a reach target on the right side
 
-% logidx.sac_within_distance_l=abs(real([saccades.precision_pos_l]))<calcoptions.sac_int_xy(1) & abs(real([saccades.precision_pos_l]))<calcoptions.sac_int_xy(2);
-% logidx.sac_within_distance_r=abs(real([saccades.precision_pos_r]))<calcoptions.sac_int_xy(1) & abs(real([saccades.precision_pos_r]))<calcoptions.sac_int_xy(2);
-% logidx.rea_within_distance_l=abs(real([reaches.precision_pos_l]))<calcoptions.rea_int_xy(1)  & abs(real([reaches.precision_pos_l]))<calcoptions.rea_int_xy(2);
-% logidx.rea_within_distance_r=abs(real([reaches.precision_pos_r]))<calcoptions.rea_int_xy(1)  & abs(real([reaches.precision_pos_r]))<calcoptions.rea_int_xy(2);
-
 logidx.sac_within_distance_l=real([saccades.accuracy_xy])<calcoptions.sac_int_xy(1) & imag([saccades.accuracy_xy])<calcoptions.sac_int_xy(2) & logidx.eyetar_l;
 logidx.sac_within_distance_r=real([saccades.accuracy_xy])<calcoptions.sac_int_xy(1) & imag([saccades.accuracy_xy])<calcoptions.sac_int_xy(2) & logidx.eyetar_r;
 logidx.rea_within_distance_l=real([reaches.accuracy_xy])<calcoptions.rea_int_xy(1)  & imag([reaches.accuracy_xy])<calcoptions.rea_int_xy(2)  & logidx.hndtar_l;
@@ -2456,8 +2094,6 @@ end
 
 
 [statistic, correlation] = saccade_reach_correlation(keys,reaches,saccades,task,selected,binary);
-% statistic=[];
-% correlation=[];
 out=struct('keys',struct,'selected',selected,'task',task,'timing',timing,'states',states,'saccades',saccades,'reaches',reaches,'physiology',physiology,'binary',binary,'raw',raw,...
     'counts',struct,'statistic',statistic,'correlation',correlation,'rundescriptions',struct,'emptyflag',emptyflag);
 %% Trial history part
@@ -2485,9 +2121,6 @@ if ~isnan(keys.mode_val.trial_history_mode) && ~keys.mode_val.trial_history_mode
     [selected.current_hist_values] =current_structure.(current_parameter);
     out.selected=selected;
 end
-
-%t.accumulate=GetSecs-t.start_analyze;
-% disp(['internal calculation took ' num2str(t.accumulate) ' seconds'])
 
 end
 
