@@ -1358,7 +1358,8 @@ for n = 1:amount_of_selected_trials
         for FN=keys.TDT_streams
         physiology(n).(FN{:})=trial(n).(FN{:});
         physiology(n).([FN{:} '_SR'])=trial(n).([FN{:} '_samplingrate']);
-        physiology(n).([FN{:} '_t0_from_rec_start'])= size([trial_orig(1:nn).(FN{:})],2)/trial_orig(nn).([FN{:} '_samplingrate'])-size(trial_orig(nn).(FN{:}),2)/trial_orig(nn).([FN{:} '_samplingrate']) - trial(n).TDT_streams_tStart;    
+        SR=unique([trial_orig.([FN{:} '_samplingrate'])]);
+        physiology(n).([FN{:} '_t0_from_rec_start'])= size([trial_orig(1:nn).(FN{:})],2)/SR-size(trial_orig(nn).(FN{:}),2)/SR - trial(n).TDT_streams_tStart;    
         end 
     end
     states(n).trial_onset_time=trial(n).tSample_from_time_start(1);
