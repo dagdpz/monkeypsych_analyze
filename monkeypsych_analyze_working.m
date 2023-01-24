@@ -1845,11 +1845,11 @@ for n = 1:amount_of_selected_trials
         elseif calcoptions.saccade_definition==4      % first saccade in the state
             sel_n_obs=1;
         
-        elseif calcoptions.saccade_definition==5      % first saccade inside any of the potential targets in this run
+        elseif calcoptions.saccade_definition==5      % first big enough saccade
             s_big_amplitudes_obs   = amp_obs>=calcoptions.sac_min_amp;
             sel_n_obs = find(s_big_amplitudes_obs,1,'first');
             
-        elseif calcoptions.saccade_definition==10      % first saccade inside any of the potential targets in this run
+        elseif calcoptions.saccade_definition==10      % first saccade emding inside any of the potential targets in this run
             
             sel_n_obs=[];
             if numel(closest_target_radius)<=1 %%% ???
@@ -1859,6 +1859,20 @@ for n = 1:amount_of_selected_trials
             end
             for sac_idx=1:n_obs
                 if any(abs(unique_eye_target_positions-saccades(n).endpos_obs(sac_idx))<=current_closest_radius)
+                    sel_n_obs=sac_idx;
+                    break
+                end
+            end
+        elseif calcoptions.saccade_definition==11      % first saccade starting inside any of the potential targets in this run
+            
+            sel_n_obs=[];
+            if numel(closest_target_radius)<=1 %%% ???
+                current_closest_radius=closest_target_radius;
+            else
+                current_closest_radius=closest_target_radius(n);
+            end
+            for sac_idx=1:n_obs
+                if any(abs(unique_eye_target_positions-saccades(n).startpos_obs(sac_idx))<=current_closest_radius)
                     sel_n_obs=sac_idx;
                     break
                 end
