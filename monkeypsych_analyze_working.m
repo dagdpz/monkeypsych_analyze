@@ -1809,8 +1809,10 @@ for n = 1:amount_of_selected_trials
         
         
         smpidx.state_obs                        = find(trial(n).state   == states(n).state_obs);
-        if trial(n).type==5 || trial(n).type==6
+        if trial(n).type==5 || trial(n).type==6 
             logsmpidx.sac_obs                       = ismember(states_of_saccades,[states(n).state_obs states(n).state_1ao]);
+        elseif calcoptions.saccade_definition==11
+            logsmpidx.sac_obs                       = ismember(states_of_saccades,[MA_STATES.TAR_HOL]); %% corrective saccades
         else
             logsmpidx.sac_obs                       = ismember(states_of_saccades,states(n).state_obs);
         end
