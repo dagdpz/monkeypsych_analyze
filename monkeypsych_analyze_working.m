@@ -777,6 +777,8 @@ MA_load_globals
 
 if numel(trial)==0
     disp('no trials in this file')
+elseif ~isfield(trial,'aborted_state')
+    disp('field aborted_state missing, consider running MPA_clean_data');
 elseif isempty(trial(end).aborted_state)
     disp('last trial is empty, consider running MPA_clean_data');
 end
