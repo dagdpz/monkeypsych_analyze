@@ -402,7 +402,7 @@ default_key_values.mode=[{1} repmat({0},1,numel(keys.mode)-1)];
 keys.complex_selective={'fix_range_x','fix_range_y','cue_range_x','cue_range_y','tar_range_x','tar_range_y','max_radius','aborted_state','demanded_hand','trial_set'};
 default_key_values.complex_selective=repmat({NaN},1,numel(keys.complex_selective));
 
-keys.simple_selective={'type','effector','choice','target_selected','success','microstim',...
+keys.simple_selective={'type','effector','choice','target_selected','success','completed','microstim',...
     'microstim_state','microstim_start','stim_to_state_end','current_strength','train_duration_ms','pulse_duration_micro_ms',...
     'electrode_depth','impedance_start_kilo_ohms','impedance_end_kilo_ohms','impedance_after_cleaning_kilo_ohms','electrode_used','current_polarity',...
     'abort_code','reward_modulation','reward_selected','reach_hand','difficulty','n_targets','n_nondistractors','n_distractors','stay_condition','stimuli_in_2hemifields'};
@@ -1825,12 +1825,12 @@ for n = 1:amount_of_selected_trials
         amp_obs                                 = abs(saccades(n).endpos_obs(1:n_obs) - saccades(n).startpos_obs(1:n_obs));
         saccades(n).amplitudes_obs(1:n_obs)     = amp_obs;
         
-        All_n_sac=1:numel(saccades(n).ini_all);
+        All_n_sac=1:n_obs;
         
         
         %% saccade definitions
         if calcoptions.saccade_definition==1    % closest saccade, if it was big enough
-            s_big_amplitudes_obs   = amp_obs>=calcoptions.sac_min_amp;
+            s_big_amplitudes_obs   =  saccades(n).amplitudes_obs>=calcoptions.sac_min_amp;
             distance_obs=abs(saccades(n).endpos_obs - saccades(n).tar_pos);
             All_n_sac=All_n_sac(s_big_amplitudes_obs);
             [~,minsac_idx]=min(distance_obs(s_big_amplitudes_obs));
