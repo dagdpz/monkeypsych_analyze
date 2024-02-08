@@ -9,10 +9,14 @@ function MPA_clean_data(datapath,dates)
 
 dir_folder_with_session_days=dir(datapath); % dir
 all_files_in_base_path=[];
+if numel(dates)==1
+    dates(2)=dates(1);
+end
+
 ctr=1;
 for k=1: length(dir_folder_with_session_days)
     X=str2num(dir_folder_with_session_days(k).name);
-    if X==dates(1) |  ( X<=  dates(2) & X >  dates(1))
+    if ~isempty(X) && (X==dates(1) ||  ( X<=  dates(2) && X >  dates(1)))
         all_files_in_base_path{ctr}= dir_folder_with_session_days(k).name;
         ctr=ctr+1;
     end
@@ -46,7 +50,6 @@ for s=1: length(dir_datapath)
                
            end
         end
-            save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
 %         if isfield(SETTINGS,'dio')
 %             SETTINGS=rmfield(SETTINGS,'dio');
 %             disp(strcat('Deleting SETTINGS.dio object of file: ', dir_datapath(s).name))
@@ -56,18 +59,19 @@ for s=1: length(dir_datapath)
         if isempty(trial(1,LastTrial_ind ).state)
             disp(strcat('Deleting last empty trial of file: ', dir_datapath(s).name))
             trial= trial(1: LastTrial_ind-1);
-            save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
         end
         
         if any(diff(trial(1,LastTrial_ind).tSample_from_time_start)==0)
             disp(strcat('Deleting last trial of file: ', dir_datapath(s).name, 'contaning identical time samples'))
             trial= trial(1: LastTrial_ind-1);
-            save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
         end
         if ~isfield(trial(1).task,'force_conditions')
             forced=MPA_detect_forced_condition(trial);
         end
-        for t=1:length(trial)
+
+        trial=orderfields(trial);
+        for t=1:length(trial)           
+            
             if ~isfield(trial(t).task,'force_conditions');                trial(t).task.force_conditions=forced; end
                         
             
@@ -119,7 +123,12 @@ for s=1: length(dir_datapath)
             if isempty(trial(t).reach_hand) && trial(t).effector==6 && trial(t).success==1 && ismember(trial(t).task.reach_hand,[1,2]); trial(t).reach_hand=trial(t).task.reach_hand; end
             if any(trial(t).states==13) && any (trial(t).states==12); trial(t).states(trial(t).states==12)=14; trial(t).state(trial(t).state==12)=14; end
         end
-        save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
+        
+        if exist('task','var')
+            save([datapath filesep dir_datapath(s).name], 'task', 'SETTINGS', 'trial')
+        else
+            save([datapath filesep dir_datapath(s).name], 'SETTINGS', 'trial')
+        end
     end
 end
 
