@@ -78,7 +78,8 @@ for c=1:numel(conditions)
             clear calibrated_pos
             saccades_concatenated(isnan([saccades_concatenated.eyepos_at_target]))=[];
             unique_positions=unique([saccades_concatenated.tar_pos]);
-            unique_positions(unique_positions==0)=[];
+            unique_fixations=unique([saccades_concatenated.fix_pos]);
+            unique_positions(ismember(unique_positions,unique_fixations))=[]; 
             
             [~,indexes]=unique(round(unique_positions));
             unique_positions=unique_positions(indexes);
