@@ -491,22 +491,22 @@ for idx_batch = 1:number_of_batches
     if numel(out_comp)==idx_batch && all([out_comp{idx_batch}.emptyflag]==1)
         fprintf('Batch #%d is empty! \n',idx_batch);
     end
-    % plot batch summary with plotting function "MA_plot_summary"
+    % plot batch summary with plotting function "MPA_plot_summary"
     if ~all(keys.plot_val.summary)==0 && keys.plot_val.display==1 %&& numel(out_comp)==idx_batch && ~isempty(out_comp{idx_batch,k}.emptyflag)???
         if ~isnan(keys.mode_val.trial_history_mode) && ~keys.mode_val.trial_history_mode==0
             hist_val=keys.hist_val;
             for k=1:keys.hist_val.n_trials_past
                 if ~isempty(out_comp{idx_batch,k}.emptyflag)
                     hist_val.n_trials_past=k;
-                    MA_plot_summary([out_comp{idx_batch,k}],keys.plot_val)
+                    MPA_plot_summary([out_comp{idx_batch,k}],keys.plot_val)
                     monkeypsych_plot_trial_history([out_comp{idx_batch,k}.selected.current_hist_values]',[out_comp{idx_batch,k}.selected.past_hist_values]',hist_val,out_comp{idx_batch,k}.rundescriptions);
                 end
             end
         elseif ~isempty(out_comp{idx_batch}.emptyflag) && ~keys.calc_val.runs_as_batches %&& numel(out_comp)==idx_batch
-            MA_plot_summary([out_comp{idx_batch}],keys.plot_val)
+            MPA_plot_summary([out_comp{idx_batch}],keys.plot_val)
         elseif ~isempty(out_comp{idx_batch}.emptyflag) && keys.calc_val.runs_as_batches %&& numel(out_comp)==idx_batch
             for idx_batch_runs_as_batches=1:numel(out_comp)
-                MA_plot_summary([out_comp{idx_batch_runs_as_batches}],keys.plot_val)
+                MPA_plot_summary([out_comp{idx_batch_runs_as_batches}],keys.plot_val)
             end
         end
     elseif all(keys.plot_val.summary)==0 && keys.plot_val.display==1
