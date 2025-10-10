@@ -650,7 +650,7 @@ for num_file=1:numel(batch_filenames)
         keys_current.csel_val.trial_set=trialset;
     end
     [out_file(num_file,1),selected_trials] = monkeypsych_analyze_calculation(trial,keys_current);
-    if keys_current.plot_val.display==1 && keys_current.plot_val.summary==0 && out_file(num_file,1).emptyflag==0;
+    if keys_current.plot_val.display==1 && all(keys_current.plot_val.summary==0) && out_file(num_file,1).emptyflag==0;
         keys_current.plot_val.sac_ini_t=keys_current.calc_val.sac_ini_t;
         keys_current.plot_val.sac_end_t=keys_current.calc_val.sac_end_t;
         keys_current.plot_val.filename=batch_filenames{num_file}(end-19:end-4);

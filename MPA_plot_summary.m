@@ -531,7 +531,7 @@ if ismember(1,plotoptions.summary)
     end
     axis equal
     text(-0.4,0.4,['r ', sprintf('%.4f',correlation.lat_r)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
-    text(-0.4,0.3,['significance ', sprintf('%.4f',correlation.lat_sig)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
+    %text(-0.4,0.3,['significance ', sprintf('%.4f',correlation.lat_sig)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
     P_options('Residual correlation in initiation', 'Reaches', 'Saccades', [-0.5 0.5], [-0.5 0.5]);
     
     % correlation saccade and reach initiation
@@ -543,7 +543,7 @@ if ismember(1,plotoptions.summary)
     end
     axis equal
     text(0.1,0.9,['r ', sprintf('%.4f',correlation.lat_r)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
-    text(0.1,0.8,['significance ', sprintf('%.4f',correlation.lat_sig)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
+    %text(0.1,0.8,['significance ', sprintf('%.4f',correlation.lat_sig)], 'FontSize', P_par.FontSize-3, 'FontWeight', P_par.FontWeight, 'FontName', P_par.FontName);
     P_options('Latency correlation from raw data', 'Reaches', 'Saccades', [0 1], [0 1]);
     
     subplot(4, 5, [15 20]); % histogram for saccade initiation
@@ -937,6 +937,8 @@ if ismember(4,plotoptions.summary)
                 
                 
                 rl_limit=0.1;
+                total_rad_errors=0;
+                idx_rad=ones(size([saccades.fix_rad]));
                 for radius_index=1:numel(eye_fix_radii)
                     idx_rad=[saccades.fix_rad]==eye_fix_radii(radius_index);
                     total_rad_errors=sum(idx_rad & logidx_combined & [binary.success]==0 & [states.state_abo]~=MA_STATES.FIX_ACQ);
@@ -1488,7 +1490,7 @@ if ismember(6,plotoptions.summary)
     
     for pos=sorted_SR_idx
         hold on;
-        ErrorPiChart_h= pie_chart(cell2mat( OSt.ErrorAnalysis.TarSel{1,pos}.Abort_code_shortsummary(:,5)), 2.5, PiChart_Error_COL, [real(OSt.unq_tarpos(pos)),imag(OSt.unq_tarpos(pos))], 1.3); axis on;
+        ErrorPiChart_h= DAG_pie_chart(cell2mat( OSt.ErrorAnalysis.TarSel{1,pos}.Abort_code_shortsummary(:,5)), 2.5, PiChart_Error_COL, [real(OSt.unq_tarpos(pos)),imag(OSt.unq_tarpos(pos))], 1.3); axis on;
         PiChartLegend= OSt.ErrorAnalysis.TarSel{1,1}.Abort_code_shortsummary( cell2mat(OSt.ErrorAnalysis.TarSel{1,1}.Abort_code_shortsummary(:,5))>0,4);
         % legend(ErrorPiChart_h([1,23,45]), PiChartLegend)
         %legend(ErrorPiChart_h(find(cell2mat(OSt.ErrorAnalysis.TarSel{u,1}.Abort_code_shortsummary(:,5))>0).*2-1), PiChartLegend)

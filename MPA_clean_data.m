@@ -65,14 +65,11 @@ for s=1: length(dir_datapath)
             disp(strcat('Deleting last trial of file: ', dir_datapath(s).name, 'contaning identical time samples'))
             trial= trial(1: LastTrial_ind-1);
         end
-        if ~isfield(trial(1).task,'force_conditions')
-            forced=MPA_detect_forced_condition(trial);
-        end
 
         trial=orderfields(trial);
         for t=1:length(trial)           
             
-            if ~isfield(trial(t).task,'force_conditions');                trial(t).task.force_conditions=forced; end
+            %if ~isfield(trial(t).task,'force_conditions');                trial(t).task.force_conditions=forced; end
                         
             
             if ~isfield(trial(t).task.timing,'tar_time_hold');                trial(t).task.timing.tar_time_hold=NaN; end
@@ -114,14 +111,27 @@ for s=1: length(dir_datapath)
             if ~isfield(trial(t).task.eye,'cue') || ~isfield(trial(t).task.eye.cue,'color_bright');  [trial(t).task.eye.cue.color_bright]=deal([NaN NaN NaN]);   end
             if ~isfield(trial(t).task.hnd,'cue') || ~isfield(trial(t).task.hnd.cue,'color_dim');     [trial(t).task.hnd.cue.color_dim]=deal([NaN NaN NaN]);      end
             if ~isfield(trial(t).task.hnd,'cue') || ~isfield(trial(t).task.hnd.cue,'color_bright');  [trial(t).task.hnd.cue.color_bright]=deal([NaN NaN NaN]);   end
+            if ~isfield(trial(t).eye,'tar');trial(t).eye.tar=trial(t).task.eye.tar;end
+            if ~isfield(trial(t).hnd,'tar');trial(t).hnd.tar=trial(t).task.hnd.tar;end
+            if ~isfield(trial(t).eye.tar,'reward_time');[trial(t).eye.tar.reward_time]=deal(NaN);end
+            if ~isfield(trial(t).hnd.tar,'reward_time');[trial(t).hnd.tar.reward_time]=deal(NaN);end
             if numel(trial(t).eye.tar(1).reward_time)==1; trial(t).eye.tar(1).reward_time(2)=trial(t).eye.tar(1).reward_time; end
-            if numel(trial(t).eye.tar(2).reward_time)==1; trial(t).eye.tar(2).reward_time(2)=trial(t).eye.tar(2).reward_time; end
+            if numel(trial(t).eye.tar)>1 && numel(trial(t).eye.tar(2).reward_time)==1; trial(t).eye.tar(2).reward_time(2)=trial(t).eye.tar(2).reward_time; end
             if numel(trial(t).hnd.tar(1).reward_time)==1; trial(t).hnd.tar(1).reward_time(2)=trial(t).hnd.tar(1).reward_time; end
-            if numel(trial(t).hnd.tar(2).reward_time)==1; trial(t).hnd.tar(2).reward_time(2)=trial(t).hnd.tar(2).reward_time; end
+            if numel(trial(t).hnd.tar)>1 && numel(trial(t).hnd.tar(2).reward_time)==1; trial(t).hnd.tar(2).reward_time(2)=trial(t).hnd.tar(2).reward_time; end
             
             if isfield(trial(t).task.timing,'grace_time_eze');            trial(t).task.timing=rmfield(trial(t).task.timing,'grace_time_eze'); end
             if isempty(trial(t).reach_hand) && trial(t).effector==6 && trial(t).success==1 && ismember(trial(t).task.reach_hand,[1,2]); trial(t).reach_hand=trial(t).task.reach_hand; end
             if any(trial(t).states==13) && any (trial(t).states==12); trial(t).states(trial(t).states==12)=14; trial(t).state(trial(t).state==12)=14; end
+            
+        end
+        
+        if ~isfield(trial(1).task,'force_conditions')
+            forced=MPA_detect_forced_condition(trial);
+        end
+        for t=1:length(trial)
+            
+            if ~isfield(trial(t).task,'force_conditions');                trial(t).task.force_conditions=forced; end
         end
         
         if exist('task','var')
