@@ -479,7 +479,8 @@ for idx_batch = 1:number_of_batches
     elseif ~isempty(temp_cells{idx_batch*2-1}) 
         batch_filenames=temp_cells{idx_batch*2-1};
     else
-        batch_filenames=format_filelist({'',[]});%format_filelist(temp_cells{1});
+        %batch_filenames=format_filelist({'',[]});%
+        format_filelist(temp_cells{1});
     end
     % Main computation is done in this subfunction:
     % "monkeypsych_analyze_runs_preprocessing ->

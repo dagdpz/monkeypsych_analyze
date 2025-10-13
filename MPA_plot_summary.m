@@ -19,7 +19,7 @@ rundescriptions=out.rundescriptions;
 %% Histograms
 hp1 = hist2per(hist([saccades.lat]', P_par.bins));                     % Saccade latency
 hp2 = hist2per(hist([reaches.lat]', P_par.bins));                      % Reach latency
-hp3 = hist2per(hist([reaches.lat]'-[saccades.lat]', P_par.bins2));    % Reach - Saccade latency
+hp3 = hist2per(hist([reaches.lat]'-[saccades.lat]', P_par.bins2));     % Reach - Saccade latency
 hp4  = complex2histper([saccades([binary.eyetar_l]).accuracy_xy].',       P_par.bins3);    % Saccade precision in observed left
 hp5  = complex2histper([saccades([binary.eyetar_r]).accuracy_xy].',       P_par.bins3);    % Saccade precision in observed right
 hp6  = complex2histper([reaches([binary.hndtar_l]).accuracy_xy].',        P_par.bins3);    % Reach precision first touched left
@@ -101,7 +101,7 @@ end
 title_print_out = sprintf([monkey_name{:}, selected_success{:}, choice_or_instructed{:},  plotoptions.additional_description, task_description{:}, reachhand, ' ',num2str(min([rundescriptions.session])), '/', num2str(min([rundescriptions.run])), ' - ', num2str(max([rundescriptions.session])), '/', num2str(max([rundescriptions.run]))]);  %?????
 
 
-if ismember(2,plotoptions.summary)
+if ismember(1,plotoptions.summary)
     
     plot_title='endpoints 2D ';
     endpoints_2D_plot=figure('Name', [plot_title title_print_out],'units','normalized','outerposition',[0 0 1 1]);
@@ -287,7 +287,7 @@ if ismember(2,plotoptions.summary)
     title_and_save(endpoints_2D_plot,plot_title,title_print_out,plotoptions);
 end
 
-if ismember(1,plotoptions.summary)
+if ismember(2,plotoptions.summary)
     %% Initiation latencies, durations and positions of saccades & reaches plots
     plot_title='Summary timing ';
     summary_timing_figure=figure('Name', [plot_title title_print_out],'units','normalized','outerposition',[0 0 1 1]);
@@ -1537,7 +1537,7 @@ if ismember(7,plotoptions.summary)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     subplot(5,7,[8, 9]);
-    bins= [-20:40:500];
+    bins= [-20:40:1000];
     hist1=hist( OSt.Effector_RT_toL_toR{1,1}*1000, bins);
     plot(bins,hist1/sum(hist1), 'Color', [0 0.6 0.8], 'MarkerSize', 3, 'LineWidth',2)
     vline(nanmean( OSt.Effector_RT_toL_toR{1,1}*1000,2), 'b')
@@ -1849,7 +1849,7 @@ OSt.rewardvalues= [[out.task.tar_rew_low]; [out.task.tar_rew_high]];
 for kk=1:size(OSt.outcomp_timing,1)
     OSt.outcomp_timing{kk,2}= eval(  ['[out.timing(:,1).' OSt.outcomp_timing{kk,1} ']'] );
 end
-OSt.idx_Choice= [out.binary(:).choice];  % sum(OSt.idx_Choice)
+OSt.idx_Choice= [out.binary(:).choice];  
 
 if isnan(ChoiceTrials); ChoiceTrials=0; end
 if ~isnan(ChoiceTrials);
@@ -1858,39 +1858,49 @@ if ~isnan(ChoiceTrials);
     end
 end
 
-OSt.idx_Succ=[out.binary(:).success]; % sum(OSt.idx_Succ)
+OSt.idx_Succ=[out.binary(:).success]; 
 
-switch tasktypeeffector
-    case {0,3}
-        effector='saccades';
-        OSt.Effector_FixRT=    nan(size(out.(effector)))'; % double([out.saccades(:).ini_fix]);
-        OSt.Effector_Fixdur=   nan(size(out.(effector)))'; % double([out.saccades(:).dur_fix]);
+supported_effectors=1:6;
+for eff=supported_effectors
+    ix=[out.task.effector]==eff;
+    switch eff
+        case {0}
+            OSt.idx_tar_left(ix)=[out.binary(ix).eyetar_l];
+            OSt.idx_tar_right(ix)=[out.binary(ix).eyetar_r];
+            OSt.Effector_RT(ix)= double([out.saccades(ix).lat]);
+            OSt.Effector_dur(ix)= double([out.saccades(ix).dur]);
+            OSt.Effector_FixRT(ix)      =   nan(size(([out.reaches(ix).ini_fix])));
+            OSt.Effector_Fixdur(ix)     =   nan(size(([out.reaches(ix).ini_fix])));
+            OSt.tar_pos(ix)             =   double([out.saccades(ix).tar_pos]);
+            OSt.tar_notchosen_pos(ix)   =   double([out.saccades(ix).nct_pos]);
+            
+        case {3}
+            OSt.idx_tar_left(ix)=[out.binary(ix).eyetar_l];
+            OSt.idx_tar_right(ix)=[out.binary(ix).eyetar_r];
+            OSt.Effector_RT(ix)= double([out.saccades(ix).lat]);
+            OSt.Effector_dur(ix)= double([out.saccades(ix).dur]);
+            OSt.Effector_FixRT(ix)      =   double([out.reaches(ix).ini_fix]);
+            OSt.Effector_Fixdur(ix)     =   double([out.reaches(ix).dur_fix]);
+            OSt.tar_pos(ix)             =   double([out.saccades(ix).tar_pos]);
+            OSt.tar_notchosen_pos(ix)   =   double([out.saccades(ix).nct_pos]);
         
-    case {1,4}
-        effector='reaches';
-        OSt.Effector_FixRT=    double([out.reaches.ini_fix]);
-        OSt.Effector_Fixdur=   double([out.reaches.dur_fix]);
+        case {1,2,4,6}
+            OSt.idx_tar_left(ix)    = [out.binary(ix).hndtar_l];
+            OSt.idx_tar_right(ix)   = [out.binary(ix).hndtar_r];
+            OSt.Effector_RT(ix)     = double([out.reaches(ix).lat]);
+            OSt.Effector_dur(ix)    = double([out.reaches(ix).dur]);
+            
+            OSt.Effector_FixRT(ix)      =   double([out.reaches(ix).ini_fix]);
+            OSt.Effector_Fixdur(ix)     =   double([out.reaches(ix).dur_fix]);
+            OSt.tar_pos(ix)             =   double([out.reaches(ix).tar_pos]);
+            OSt.tar_notchosen_pos(ix)   =   double([out.reaches(ix).nct_pos]);
         
-    case 6
-        effector='reaches';
-        OSt.Effector_FixRT=    double([out.reaches.ini_fix]);
-        OSt.Effector_Fixdur=   double([out.reaches.dur_fix]);
-        
-        
+    end
 end
-OSt.Effector_RT_Sac6=    double([out.saccades.lat]);
-OSt.Effector_dur_Sac6=   double([out.saccades.dur]);
-OSt.idx_tar_left         =  [out.(effector).tar_pos] - [out.(effector).fix_pos]>0;
-OSt.idx_tar_right        =  [out.(effector).tar_pos] - [out.(effector).fix_pos]<0;
-OSt.Effector_RT          =  double([out.(effector).lat]);
 OSt.Effector_RT(OSt.Effector_RT<0)=0;
-OSt.Effector_dur         =   double([out.(effector).dur]);
-%     OSt.Effector_FixRT       =   double([out.(effector).ini_fix]);
-%     OSt.Effector_Fixdur      =   double([out.(effector).dur_fix]);
-OSt.tar_pos              =   double([out.(effector).tar_pos]);
-OSt.tar_notchosen_pos    =   double([out.(effector).nct_pos]);
+% OSt.Effector_RT_Sac6=    double([out.saccades.lat]);
+% OSt.Effector_dur_Sac6=   double([out.saccades.dur]);
 OSt.Saccade_nSac         =   [out.saccades.num_sac];
-
 %%
 
 OSt.Reaction_Time_List{1,1}= OSt.Effector_RT;
